@@ -15,8 +15,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ProductCard } from "@/components/product-card";
 import { differenceInDays } from "date-fns";
+import { ProductTable } from "./product-table";
 
 type FilterStatus = "all" | ProductStatus;
 
@@ -99,17 +99,11 @@ export function DashboardClient({ initialProducts }: DashboardClientProps) {
           </DropdownMenu>
         </div>
       </div>
-      <div className="grid gap-4 md:grid-cols-2 md:gap-8 lg:grid-cols-3 xl:grid-cols-4">
-        {filteredAndSortedProducts.map((product) => (
-          <ProductCard
-            key={product.id}
-            product={product}
-            onCommit={handleCommit}
-          />
-        ))}
+      <div className="rounded-lg border shadow-sm">
+        <ProductTable products={filteredAndSortedProducts} onCommit={handleCommit} />
       </div>
        {filteredAndSortedProducts.length === 0 && (
-          <div className="md:col-span-2 lg:col-span-3 xl:col-span-4 text-center text-muted-foreground mt-8">
+          <div className="text-center text-muted-foreground mt-8">
             No products match the current filter.
           </div>
         )}
