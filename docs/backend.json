@@ -42,32 +42,40 @@
           "description": "Unique identifier for the Product entity."
         },
         "division": {
-          "type": "string",
+          "type": "number",
           "description": "The division the product belongs to."
         },
         "itemCode": {
           "type": "string",
           "description": "The item code of the product."
         },
-        "packSize": {
+        "brand": {
           "type": "string",
-          "description": "The pack size of the product."
+          "description": "The brand of the product."
         },
-        "productDescription": {
+        "description": {
           "type": "string",
           "description": "A description of the product."
         },
-        "minExpirationDate": {
+        "packSize": {
+          "type": "number",
+          "description": "The pack size of the product."
+        },
+        "size": {
+          "type": "string",
+          "description": "The size of the product unit."
+        },
+        "minExpiry": {
           "type": "string",
           "description": "The minimum expiration date for the product.",
           "format": "date-time"
         },
-        "maxExpirationDate": {
+        "maxExpiry": {
           "type": "string",
           "description": "The maximum expiration date for the product.",
           "format": "date-time"
         },
-        "projectedSellOutDate": {
+        "projectedSellOut": {
           "type": "string",
           "description": "The projected sell-out date for the product.",
           "format": "date-time"
@@ -75,18 +83,25 @@
         "quantityOnHand": {
           "type": "number",
           "description": "The quantity of the product currently on hand."
+        },
+        "committedQuantity": {
+          "type": "number",
+          "description": "The total quantity committed by all sales reps."
         }
       },
       "required": [
         "id",
         "division",
         "itemCode",
+        "brand",
+        "description",
         "packSize",
-        "productDescription",
-        "minExpirationDate",
-        "maxExpirationDate",
-        "projectedSellOutDate",
-        "quantityOnHand"
+        "size",
+        "minExpiry",
+        "maxExpiry",
+        "projectedSellOut",
+        "quantityOnHand",
+        "committedQuantity"
       ]
     },
     "SalesCommitment": {
@@ -157,7 +172,7 @@
           "schema": {
             "$ref": "#/backend/entities/Product"
           },
-          "description": "Stores product information. This collection is globally readable.",
+          "description": "Stores product information. This collection is globally readable but write-protected on the client.",
           "params": [
             {
               "name": "productId",
