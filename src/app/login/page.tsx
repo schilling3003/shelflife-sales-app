@@ -12,14 +12,20 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth, useUser } from "@/firebase";
-import { initiateAnonymousSignIn } from "@/firebase/non-blocking-login";
+import { initiateEmailSignIn } from "@/firebase/non-blocking-login";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { useToast } from "@/hooks/use-toast";
+import { FirebaseError } from "firebase/app";
 
 export default function LoginPage() {
   const auth = useAuth();
   const { user, isUserLoading } = useUser();
   const router = useRouter();
+  const { toast } = useToast();
+
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
 
   useEffect(() => {
     if (!isUserLoading && user) {
@@ -27,8 +33,33 @@ export default function LoginPage() {
     }
   }, [user, isUserLoading, router]);
 
-  const handleSignIn = () => {
-    initiateAnonymousSignIn(auth);
+  const handleSignIn = async () => {
+    try {
+      // We are not awaiting this on purpose to follow non-blocking login pattern
+      initiateEmailSignIn(auth, email, password);
+    } catch (error) {
+      let errorMessage = "An unexpected error occurred.";
+      if (error instanceof FirebaseError) {
+        switch (error.code) {
+          case "auth/invalid-email":
+            errorMessage = "Please enter a valid email address.";
+            break;
+          case "auth/user-not-found":
+          case "auth/wrong-password":
+          case "auth/invalid-credential":
+            errorMessage = "Invalid email or password.";
+            break;
+          default:
+            errorMessage = "Login failed. Please try again.";
+            break;
+        }
+      }
+      toast({
+        variant: "destructive",
+        title: "Login Failed",
+        description: errorMessage,
+      });
+    }
   };
 
   if (isUserLoading || user) {
@@ -51,23 +82,30 @@ export default function LoginPage() {
         <CardContent className="grid gap-4">
           <div className="grid gap-2">
             <Label htmlFor="email">Email</Label>
-            <Input id="email" type="email" placeholder="m@example.com" required />
+            <Input 
+              id="email" 
+              type="email" 
+              placeholder="m@example.com" 
+              required 
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
           </div>
           <div className="grid gap-2">
             <Label htmlFor="password">Password</Label>
-            <Input id="password" type="password" required />
+            <Input 
+              id="password" 
+              type="password" 
+              required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
           </div>
         </CardContent>
         <CardFooter className="flex flex-col gap-4">
           <Button className="w-full" onClick={handleSignIn}>
             Sign in
           </Button>
-          <div className="text-center text-sm">
-            Don't have an account?{" "}
-            <Button variant="link" className="p-0">
-              Sign up
-            </Button>
-          </div>
         </CardFooter>
       </Card>
     </div>
