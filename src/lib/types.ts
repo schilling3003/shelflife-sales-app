@@ -13,3 +13,18 @@ export type Product = {
   quantityOnHand: number;
   committedQuantity: number;
 };
+
+export type SalesCommitment = {
+  id: string;
+  userId: string;
+  productId: string;
+  committedQuantity: number;
+  commitmentDate: string; // ISO Date string
+};
+
+export type User = {
+  id: string;
+  firstName?: string;
+  lastName?: string;
+  email: string;
+};

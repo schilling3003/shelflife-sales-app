@@ -38,9 +38,7 @@ export default function RootLayout({
           spaceGrotesk.variable
         )}
       >
-        <FirebaseClientProvider>
-          {children}
-        </FirebaseClientProvider>
+        <FirebaseClientProvider>{children}</FirebaseClientProvider>
         <Toaster />
       </body>
     </html>

@@ -4,7 +4,7 @@
 import { useMemo, useState } from "react";
 import { ListFilter } from "lucide-react";
 
-import type { Product } from "@/lib/types";
+import { Product } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -25,12 +25,15 @@ import {
 import { ProductTable } from "./product-table";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
+import { useUser, useFirestore } from "@/firebase";
+import { products as initialProducts } from "@/lib/data";
+import { addDocumentNonBlocking } from "@/firebase/non-blocking-updates";
+import { collection } from "firebase/firestore";
 
-interface DashboardClientProps {
-  initialProducts: Product[];
-}
+export function DashboardClient() {
+  const { user } = useUser();
+  const firestore = useFirestore();
 
-export function DashboardClient({ initialProducts }: DashboardClientProps) {
   const [products, setProducts] = useState<Product[]>(initialProducts);
   const [sort, setSort] = useState("sell-out-asc");
   const [currentPage, setCurrentPage] = useState(1);
@@ -40,6 +43,9 @@ export function DashboardClient({ initialProducts }: DashboardClientProps) {
   const [showOnlyAvailable, setShowOnlyAvailable] = useState(false);
 
   const handleCommit = (productId: string, quantity: number) => {
+    if (!user || !firestore) return;
+
+    // Optimistically update the UI
     setProducts((prevProducts) =>
       prevProducts.map((p) =>
         p.id === productId
@@ -47,6 +53,14 @@ export function DashboardClient({ initialProducts }: DashboardClientProps) {
           : p
       )
     );
+    
+    const commitmentsRef = collection(firestore, 'users', user.uid, 'salesCommitments');
+    addDocumentNonBlocking(commitmentsRef, {
+        productId,
+        committedQuantity: quantity,
+        commitmentDate: new Date().toISOString(),
+        userId: user.uid,
+    });
   };
   
   const divisions = useMemo(() => ["all", ...Array.from(new Set(initialProducts.map(p => p.division.toString()))).sort((a,b) => Number(a) - Number(b))], [initialProducts]);

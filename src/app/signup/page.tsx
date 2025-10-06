@@ -19,13 +19,19 @@ import { useEffect, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { FirebaseError } from "firebase/app";
 import Link from "next/link";
+import { useFirestore } from "@/firebase";
+import { setDocumentNonBlocking } from "@/firebase/non-blocking-updates";
+import { doc } from "firebase/firestore";
 
 export default function SignupPage() {
   const auth = useAuth();
+  const firestore = useFirestore();
   const { user, isUserLoading } = useUser();
   const router = useRouter();
   const { toast } = useToast();
 
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isSigningUp, setIsSigningUp] = useState(false);
@@ -37,17 +43,37 @@ export default function SignupPage() {
   }, [user, isUserLoading, router]);
 
   const handleSignUp = async () => {
-    if (!email || !password) {
-        toast({
-            variant: "destructive",
-            title: "Sign-up Failed",
-            description: "Please enter both email and password.",
-        });
-        return;
+    if (!email || !password || !firstName || !lastName) {
+      toast({
+        variant: "destructive",
+        title: "Sign-up Failed",
+        description: "Please fill out all fields.",
+      });
+      return;
     }
     setIsSigningUp(true);
     try {
-      await createUserWithEmailAndPassword(auth, email, password);
+      const userCredential = await createUserWithEmailAndPassword(
+        auth,
+        email,
+        password
+      );
+      const newUser = userCredential.user;
+
+      if (newUser && firestore) {
+        const userDocRef = doc(firestore, "users", newUser.uid);
+        setDocumentNonBlocking(userDocRef, {
+            id: newUser.uid,
+            firstName,
+            lastName,
+            email: newUser.email,
+        }, { merge: true });
+      }
+
+      toast({
+        title: "Sign-up Successful",
+        description: "You have successfully created an account.",
+      });
       // Let the useEffect handle the redirect
     } catch (error) {
       let errorMessage = "An unexpected error occurred.";
@@ -90,17 +116,41 @@ export default function SignupPage() {
         <CardHeader>
           <CardTitle className="text-2xl">Sign Up</CardTitle>
           <CardDescription>
-            Enter your email and password to create an account.
+            Enter your details to create an account.
           </CardDescription>
         </CardHeader>
         <CardContent className="grid gap-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="grid gap-2">
+              <Label htmlFor="first-name">First Name</Label>
+              <Input
+                id="first-name"
+                placeholder="Max"
+                required
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
+                disabled={isSigningUp}
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="last-name">Last Name</Label>
+              <Input
+                id="last-name"
+                placeholder="Robinson"
+                required
+                value={lastName}
+                onChange={(e) => setLastName(e.target.value)}
+                disabled={isSigningUp}
+              />
+            </div>
+          </div>
           <div className="grid gap-2">
             <Label htmlFor="email">Email</Label>
-            <Input 
-              id="email" 
-              type="email" 
-              placeholder="m@example.com" 
-              required 
+            <Input
+              id="email"
+              type="email"
+              placeholder="m@example.com"
+              required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               disabled={isSigningUp}
@@ -108,9 +158,9 @@ export default function SignupPage() {
           </div>
           <div className="grid gap-2">
             <Label htmlFor="password">Password</Label>
-            <Input 
-              id="password" 
-              type="password" 
+            <Input
+              id="password"
+              type="password"
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
@@ -119,8 +169,12 @@ export default function SignupPage() {
           </div>
         </CardContent>
         <CardFooter className="flex flex-col gap-4">
-          <Button className="w-full" onClick={handleSignUp} disabled={isSigningUp}>
-            {isSigningUp ? 'Signing Up...' : 'Sign Up'}
+          <Button
+            className="w-full"
+            onClick={handleSignUp}
+            disabled={isSigningUp}
+          >
+            {isSigningUp ? "Signing Up..." : "Sign Up"}
           </Button>
           <div className="text-center text-sm">
             Already have an account?{" "}

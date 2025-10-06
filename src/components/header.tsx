@@ -12,8 +12,9 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
+import Link from "next/link";
 
-export function Header() {
+export function Header({children}: {children?: React.ReactNode}) {
   const auth = useAuth();
   const { user } = useUser();
 
@@ -22,15 +23,16 @@ export function Header() {
   };
 
   return (
-    <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-background px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6">
+    <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-background px-4 sm:px-6">
+       {children}
       <div className="flex items-center gap-2">
         <Package className="h-6 w-6" />
         <h1 className="font-headline text-2xl font-semibold">
-          ShelfLife Sales
+          <Link href="/">ShelfLife Sales</Link>
         </h1>
       </div>
       <div className="ml-auto flex items-center gap-4">
-        <Button>
+        <Button disabled>
           <UploadCloud className="mr-2 h-4 w-4" />
           Import CSV
         </Button>
@@ -45,7 +47,7 @@ export function Header() {
                 <Avatar>
                   <AvatarImage src={user.photoURL ?? ""} alt="User avatar" />
                   <AvatarFallback>
-                    <UserIcon />
+                    {user.displayName?.[0] || user.email?.[0] || <UserIcon />}
                   </AvatarFallback>
                 </Avatar>
               </Button>
