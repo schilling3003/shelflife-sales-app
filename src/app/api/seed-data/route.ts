@@ -13,6 +13,7 @@ export async function POST() {
     console.error('API Error Seeding Data:', error);
     const errorMessage = error instanceof Error ? error.message : 'An unknown server error occurred.';
     // Return a plain text error response with a 500 status code.
+    // This is more robust and prevents the client from trying to parse HTML as JSON.
     return new NextResponse(errorMessage, {
       status: 500,
       headers: {

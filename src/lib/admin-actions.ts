@@ -1,15 +1,16 @@
+
 // IMPORTANT: This file should only be imported and used in server-side code.
 
-import { initializeApp, getApps, cert, getApp } from 'firebase-admin/app';
+import { initializeApp, getApps, getApp } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
 import { products } from './data'; 
 import { Product } from './types';
 
-// When running in a Google Cloud environment like App Hosting, the Admin SDK 
-// can automatically discover the correct credentials and project configuration.
-// We ensure we only initialize the app once.
+// Standard pattern to initialize the Admin SDK in a server environment like Next.js/App Hosting.
+// This ensures the app is only initialized once.
 if (!getApps().length) {
-  // Initialize with application default credentials.
+  // When running in a Google Cloud environment (like App Hosting), the SDK can
+  // automatically discover the project credentials.
   initializeApp();
 }
 
@@ -27,7 +28,8 @@ export async function seedProductsData() {
   products.forEach((product: Product) => {
     const docRef = db.collection('products').doc(product.id);
     
-    // Convert date strings back to Date objects for Firestore
+    // Convert date strings from the data file into native Date objects for Firestore.
+    // This is a more robust way to handle timestamps.
     const firestoreProduct = {
       ...product,
       minExpiry: new Date(product.minExpiry),
