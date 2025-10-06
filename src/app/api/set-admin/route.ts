@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server';
-import { auth } from '@/lib/firebase-admin'; // ✅ IMPORT from the new module
+import { getAdminAuth } from '@/lib/firebase-admin';
 import { setAdminClaim } from '@/lib/admin-actions';
 
 export async function POST(request: Request) {
+  const auth = getAdminAuth();
   try {
     const token = request.headers.get('Authorization')?.split('Bearer ')[1];
     if (!token) {
@@ -31,7 +32,6 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error('API Error in /api/set-admin:', error);
     const errorMessage = error instanceof Error ? error.message : 'An unknown server error occurred.';
-    // Return a plain text response to prevent client-side JSON parsing errors on crash
     return new NextResponse(errorMessage, {
       status: 500,
       headers: {
