@@ -1,22 +1,21 @@
+
 // IMPORTANT: This file should only be imported and used in server-side code.
 
-import { initializeApp, getApps, cert } from 'firebase-admin/app';
+import { initializeApp, getApps } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
-import { products } from './data'; // Assuming your product data is here
+import { products } from './data'; 
 
-// Firebase App Hosting provides GOOGLE_APPLICATION_CREDENTIALS automatically.
-// For local development, you would need to set this environment variable
-// to the path of your service account key file.
-// Example: export GOOGLE_APPLICATION_CREDENTIALS="/path/to/your/key.json"
+// When running in a Google Cloud environment like App Hosting, the Admin SDK 
+// can automatically discover the correct credentials and project configuration.
+// We ensure we only initialize the app once.
 
 const adminApp =
   getApps().find((app) => app.name === 'firebase-admin-app') ||
-  initializeApp(
-    {
-      // projectId is automatically inferred from service account credentials
-    },
-    'firebase-admin-app'
-  );
+  initializeApp({
+    // By providing no config, the SDK uses default credentials discovery.
+    // In App Hosting, this automatically uses the service account associated
+    // with the backend.
+  }, 'firebase-admin-app');
 
 const db = getFirestore(adminApp);
 
