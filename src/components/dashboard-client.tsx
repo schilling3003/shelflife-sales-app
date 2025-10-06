@@ -3,6 +3,7 @@
 
 import { useMemo, useState } from "react";
 import { ListFilter } from "lucide-react";
+import Link from "next/link";
 
 import { Product } from "@/lib/types";
 import { Button } from "@/components/ui/button";
@@ -269,5 +270,3 @@ export function DashboardClient() {
     </>
   );
 }
-
-    
