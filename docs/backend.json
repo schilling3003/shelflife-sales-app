@@ -1,0 +1,192 @@
+{
+  "entities": {
+    "User": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "User",
+      "type": "object",
+      "description": "Represents a user (sales representative) in the system.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the User entity."
+        },
+        "firstName": {
+          "type": "string",
+          "description": "The first name of the user."
+        },
+        "lastName": {
+          "type": "string",
+          "description": "The last name of the user."
+        },
+        "email": {
+          "type": "string",
+          "description": "The email address of the user.",
+          "format": "email"
+        }
+      },
+      "required": [
+        "id",
+        "firstName",
+        "lastName",
+        "email"
+      ]
+    },
+    "Product": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Product",
+      "type": "object",
+      "description": "Represents a product in the inventory.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Product entity."
+        },
+        "division": {
+          "type": "string",
+          "description": "The division the product belongs to."
+        },
+        "itemCode": {
+          "type": "string",
+          "description": "The item code of the product."
+        },
+        "packSize": {
+          "type": "string",
+          "description": "The pack size of the product."
+        },
+        "productDescription": {
+          "type": "string",
+          "description": "A description of the product."
+        },
+        "minExpirationDate": {
+          "type": "string",
+          "description": "The minimum expiration date for the product.",
+          "format": "date-time"
+        },
+        "maxExpirationDate": {
+          "type": "string",
+          "description": "The maximum expiration date for the product.",
+          "format": "date-time"
+        },
+        "projectedSellOutDate": {
+          "type": "string",
+          "description": "The projected sell-out date for the product.",
+          "format": "date-time"
+        },
+        "quantityOnHand": {
+          "type": "number",
+          "description": "The quantity of the product currently on hand."
+        }
+      },
+      "required": [
+        "id",
+        "division",
+        "itemCode",
+        "packSize",
+        "productDescription",
+        "minExpirationDate",
+        "maxExpirationDate",
+        "projectedSellOutDate",
+        "quantityOnHand"
+      ]
+    },
+    "SalesCommitment": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "SalesCommitment",
+      "type": "object",
+      "description": "Represents a sales commitment made by a sales representative for a specific product.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the SalesCommitment entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to User. (Relationship: User 1:N SalesCommitment)"
+        },
+        "productId": {
+          "type": "string",
+          "description": "Reference to Product. (Relationship: Product 1:N SalesCommitment)"
+        },
+        "committedQuantity": {
+          "type": "number",
+          "description": "The quantity of the product the sales representative has committed to sell."
+        },
+        "commitmentDate": {
+          "type": "string",
+          "description": "The date the sales representative made the commitment.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "productId",
+        "committedQuantity",
+        "commitmentDate"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/users/{userId}",
+        "definition": {
+          "entityName": "User",
+          "schema": {
+            "$ref": "#/backend/entities/User"
+          },
+          "description": "Stores user profiles. Only the user can read/write their profile.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/products/{productId}",
+        "definition": {
+          "entityName": "Product",
+          "schema": {
+            "$ref": "#/backend/entities/Product"
+          },
+          "description": "Stores product information. This collection is globally readable.",
+          "params": [
+            {
+              "name": "productId",
+              "description": "The unique identifier of the product."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/salesCommitments/{salesCommitmentId}",
+        "definition": {
+          "entityName": "SalesCommitment",
+          "schema": {
+            "$ref": "#/backend/entities/SalesCommitment"
+          },
+          "description": "Stores sales commitments made by a specific user. Path-based ownership ensures only the user can read/write their own commitments.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user."
+            },
+            {
+              "name": "salesCommitmentId",
+              "description": "The unique identifier of the sales commitment."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The Firestore data structure is designed to support the ShelfLife Sales application, focusing on product inventory management and sales commitments. The core principle is Authorization Independence, achieved through path-based ownership for user data and denormalization where necessary.  Sales commitments are placed under the user's document to ensure clear ownership.  The `products` collection is kept separate at the top level as a global read only repository.\n\nSpecifically:\n\n*   **/users/{userId}**: Stores user profiles. Path-based ownership ensures only the user can read/write their own profile data.\n*   **/products/{productId}**: Stores product details. This collection is at the root level and global, ensuring all users can view product information. Sales commitments should reference this product.\n*   **/users/{userId}/salesCommitments/{salesCommitmentId}**: Stores sales commitments made by a specific user.  This structure provides clear ownership and simplifies security rules.\n\nThis design ensures Authorization Independence. There are no `get()` calls required in the security rules to determine authorization.  Each document's access is determined solely by the path and the `request.auth.uid`. \n\nThis design also supports the QAPs (Rules are not Filters) requirement. List operations on `/users/{userId}/salesCommitments` are secure because they are path-based and only return commitments owned by the authenticated user."
+  }
+}
