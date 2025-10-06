@@ -25,16 +25,20 @@ import {
 import { ProductTable } from "./product-table";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
-import { useUser, useFirestore } from "@/firebase";
-import { products as initialProducts } from "@/lib/data";
+import { useUser, useFirestore, useCollection, useMemoFirebase } from "@/firebase";
 import { addDocumentNonBlocking } from "@/firebase/non-blocking-updates";
-import { collection } from "firebase/firestore";
+import { collection, query } from "firebase/firestore";
 
 export function DashboardClient() {
   const { user } = useUser();
   const firestore = useFirestore();
 
-  const [products, setProducts] = useState<Product[]>(initialProducts);
+  const productsQuery = useMemoFirebase(
+    () => (firestore ? query(collection(firestore, "products")) : null),
+    [firestore]
+  );
+  const { data: products, isLoading: isProductsLoading } = useCollection<Product>(productsQuery);
+
   const [sort, setSort] = useState("sell-out-asc");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
@@ -44,15 +48,6 @@ export function DashboardClient() {
 
   const handleCommit = (productId: string, quantity: number) => {
     if (!user || !firestore) return;
-
-    // Optimistically update the UI
-    setProducts((prevProducts) =>
-      prevProducts.map((p) =>
-        p.id === productId
-          ? { ...p, committedQuantity: p.committedQuantity + quantity }
-          : p
-      )
-    );
     
     const commitmentsRef = collection(firestore, 'users', user.uid, 'salesCommitments');
     addDocumentNonBlocking(commitmentsRef, {
@@ -63,10 +58,18 @@ export function DashboardClient() {
     });
   };
   
-  const divisions = useMemo(() => ["all", ...Array.from(new Set(initialProducts.map(p => p.division.toString()))).sort((a,b) => Number(a) - Number(b))], [initialProducts]);
-  const brands = useMemo(() => ["all", ...Array.from(new Set(initialProducts.map(p => p.brand))).sort()], [initialProducts]);
+  const divisions = useMemo(() => {
+    if (!products) return ["all"];
+    return ["all", ...Array.from(new Set(products.map(p => p.division.toString()))).sort((a,b) => Number(a) - Number(b))];
+  }, [products]);
+  
+  const brands = useMemo(() => {
+    if (!products) return ["all"];
+    return ["all", ...Array.from(new Set(products.map(p => p.brand))).sort()];
+  }, [products]);
 
   const filteredProducts = useMemo(() => {
+    if (!products) return [];
     let filtered = products;
 
     if (divisionFilter !== "all") {
@@ -134,6 +137,9 @@ export function DashboardClient() {
     setCurrentPage(1);
   };
 
+  if (isProductsLoading) {
+    return <div className="flex justify-center items-center h-full"><p>Loading products...</p></div>
+  }
 
   return (
     <>
@@ -210,9 +216,10 @@ export function DashboardClient() {
       <div className="rounded-lg border shadow-sm">
         <ProductTable products={paginatedProducts} onCommit={handleCommit} />
       </div>
-       {paginatedProducts.length === 0 && (
+       {(paginatedProducts.length === 0 && !isProductsLoading) && (
           <div className="text-center text-muted-foreground mt-8">
-            No products found.
+            No products found. Have you seeded the data?
+            <Link href="/seed-data" className="text-primary underline ml-2">Seed Data</Link>
           </div>
         )}
       <div className="flex items-center justify-between mt-4">
@@ -262,3 +269,5 @@ export function DashboardClient() {
     </>
   );
 }
+
+    

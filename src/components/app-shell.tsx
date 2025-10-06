@@ -1,3 +1,4 @@
+
 "use client";
 
 import {
@@ -11,7 +12,7 @@ import {
   SidebarHeader,
   SidebarInset,
 } from "@/components/ui/sidebar";
-import { LayoutDashboard, Users } from "lucide-react";
+import { LayoutDashboard, Users, Database } from "lucide-react";
 import { Header } from "./header";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
@@ -22,6 +23,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const navItems = [
     { href: "/", label: "Dashboard", icon: LayoutDashboard },
     { href: "/users", label: "Users", icon: Users },
+    { href: "/seed-data", label: "Seed Data", icon: Database },
   ];
 
   return (
@@ -56,3 +58,5 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     </SidebarProvider>
   );
 }
+
+    
