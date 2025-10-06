@@ -1,22 +1,18 @@
 
 // IMPORTANT: This file should only be imported and used in server-side code.
 
-import { initializeApp, getApps } from 'firebase-admin/app';
+import { initializeApp, getApps, getApp } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
 import { products } from './data'; 
 
 // When running in a Google Cloud environment like App Hosting, the Admin SDK 
 // can automatically discover the correct credentials and project configuration.
 // We ensure we only initialize the app once.
+if (!getApps().length) {
+  initializeApp();
+}
 
-const adminApp =
-  getApps().find((app) => app.name === 'firebase-admin-app') ||
-  initializeApp({
-    // By providing no config, the SDK uses default credentials discovery.
-    // In App Hosting, this automatically uses the service account associated
-    // with the backend.
-  }, 'firebase-admin-app');
-
+const adminApp = getApp();
 const db = getFirestore(adminApp);
 
 export async function seedProductsData() {
