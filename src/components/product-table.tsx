@@ -57,6 +57,7 @@ export function ProductTable({ products, onCommit }: ProductTableProps) {
           <TableHead>Min Exp</TableHead>
           <TableHead>Max Exp</TableHead>
           <TableHead>Sell Out</TableHead>
+          <TableHead className="text-right">QOH</TableHead>
           <TableHead className="w-[150px] text-right">Inventory</TableHead>
           <TableHead className="w-[100px]"></TableHead>
         </TableRow>
@@ -87,12 +88,10 @@ export function ProductTable({ products, onCommit }: ProductTableProps) {
               <TableCell className={cn("py-1", daysToSellOut < 0 && "text-destructive")}>
                 {format(new Date(product.projectedSellOut), "MM/dd/yy")}
               </TableCell>
+              <TableCell className="py-1 text-right font-medium">{product.quantityOnHand.toLocaleString()}</TableCell>
                <TableCell className="py-1 text-right">
                 <div className="flex flex-col items-end">
                    <div className="font-medium">{availableQuantity.toLocaleString()} <span className="text-xs text-muted-foreground">avail</span></div>
-                   <div className="text-xs text-muted-foreground">
-                     {product.committedQuantity.toLocaleString()} of {product.quantityOnHand.toLocaleString()} committed
-                   </div>
                    <Progress value={commitmentPercentage} className="h-1 mt-1 w-24" />
                 </div>
               </TableCell>
