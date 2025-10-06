@@ -2,81 +2,93 @@
  * @fileoverview Firestore Security Rules for ShelfLife Sales application.
  *
  * Core Philosophy:
- * This ruleset enforces a strict user-ownership model for user profiles and sales commitments.
- * Product information is globally readable.
+ * This ruleset prioritizes strict, path-based authorization with public read access for the 'products' collection.
+ * User data is secured under their respective `/users/{userId}` path, and all sales commitments are nested under the user for ownership.
  *
  * Data Structure:
- * - /users/{userId}: User profile information, accessible only to the user.
- * - /products/{productId}: Product information, globally readable.
- * - /users/{userId}/salesCommitments/{salesCommitmentId}: Sales commitments made by a specific user, accessible only to that user.
+ * - /users/{userId}: User profiles, accessible only by the user.
+ * - /products/{productId}: Product information, publicly readable.
+ * - /users/{userId}/salesCommitments/{salesCommitmentId}: Sales commitments made by a specific user, accessible only by that user.
  *
  * Key Security Decisions:
- * - Users can only read and write their own profile data.
- * - All users can read product information.
- * - Users can only read and write their own sales commitments.
- * - Data validation is relaxed during this prototyping phase to allow for rapid schema iteration.
+ * - Products are publicly readable but cannot be created, updated, or deleted through the client. Seed this collection with a script.
+ * - User listing is disallowed.
+ * - Sales commitments are strictly user-owned and nested under the user's document.
+ *
+ * Denormalization for Authorization:
+ * - The `userId` is denormalized onto the `SalesCommitment` documents, enabling path-based authorization.
+ *
+ * Structural Segregation:
+ * - Public product data is separated from private user data to allow public read access without compromising user data.
  */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Grants access to user profile documents.
+     * @description Allows users to read and write their own user profile.
      * @path /users/{userId}
-     * @allow (create) - User with UID 'user123' creates their profile at /users/user123.
-     * @deny (create) - User with UID 'user123' attempts to create a profile at /users/user456.
-     * @allow (get, update, delete) - User with UID 'user123' reads/updates/deletes their profile at /users/user123.
-     * @deny (get, update, delete) - User with UID 'user123' attempts to read/update/delete the profile at /users/user456.
-     * @principle Enforces document ownership for all operations.
+     * @allow (create) request.auth.uid == 'user123' && request.resource.data.id == 'user123'
+     * @allow (get, update, delete) request.auth.uid == 'user123' if the document exists
+     * @allow (list) false
+     * @deny (create) request.auth.uid != 'user123'
+     * @deny (get, update, delete) request.auth.uid != 'user123'
+     * @principle Enforces document ownership for writes and restricts access to a user's own data tree.
      */
     match /users/{userId} {
-      // Helper function to check if the request is made by the owner of the document.
       function isOwner(userId) {
         return request.auth != null && request.auth.uid == userId;
       }
 
-      // Allow the user to create their own profile if the userId matches their auth UID.
-      allow create: if isOwner(userId) && request.resource.data.id == userId;
+      function isExistingOwner(userId) {
+        return isOwner(userId) && resource != null;
+      }
 
-      // Allow the user to get, update, and delete their own profile if they are the owner.
       allow get: if isOwner(userId);
       allow list: if false;
-      allow update: if isOwner(userId) && resource != null && request.resource.data.id == resource.data.id;
-      allow delete: if isOwner(userId) && resource != null;
+      allow create: if isOwner(userId) && request.resource.data.id == userId;
+      allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id;
+      allow delete: if isExistingOwner(userId);
     }
 
     /**
-     * @description Grants global read access to product documents.
+     * @description Allows anyone to read product information, but restricts creation, updates, and deletes.
      * @path /products/{productId}
-     * @allow (get, list) - Any user can read product information.
-     * @deny (create, update, delete) - No user can create, update, or delete product information.
-     * @principle Allows public read access with restricted write access.
+     * @allow (get, list) true
+     * @deny (create, update, delete) true
+     * @principle Provides public read access to product data while preventing unauthorized modifications.
      */
     match /products/{productId} {
-      allow get, list: if true;
-      allow create, update, delete: if false; // TODO: Add owner validation once the schema is updated with an ownership field.
+      allow get: if true;
+      allow list: if true;
+      allow create: if false;
+      allow update: if false;
+      allow delete: if false;
     }
 
     /**
-     * @description Grants access to sales commitment documents nested under a user.
+     * @description Allows users to read and write their own sales commitments.
      * @path /users/{userId}/salesCommitments/{salesCommitmentId}
-     * @allow (create) - User with UID 'user123' creates a commitment under /users/user123/salesCommitments/.
-     * @deny (create) - User with UID 'user123' attempts to create a commitment under /users/user456/salesCommitments/.
-     * @allow (get, update, delete) - User with UID 'user123' reads/updates/deletes their commitment under /users/user123/salesCommitments/.
-     * @deny (get, update, delete) - User with UID 'user123' attempts to read/update/delete a commitment under /users/user456/salesCommitments/.
-     * @principle Enforces document ownership via path for reads and writes.
+     * @allow (create) request.auth.uid == 'user123' && request.resource.data.userId == 'user123'
+     * @allow (get, update, delete) request.auth.uid == 'user123' if the document exists
+     * @allow (list) request.auth.uid == 'user123'
+     * @deny (create) request.auth.uid != 'user123'
+     * @deny (get, update, delete) request.auth.uid != 'user123'
+     * @principle Enforces document ownership for writes and restricts access to a user's own data.
      */
     match /users/{userId}/salesCommitments/{salesCommitmentId} {
-      // Helper function to check if the request is made by the owner of the parent user document.
       function isOwner(userId) {
         return request.auth != null && request.auth.uid == userId;
       }
 
-      allow create: if isOwner(userId) && request.resource.data.userId == userId;
+      function isExistingOwner(userId) {
+        return isOwner(userId) && resource != null;
+      }
       allow get: if isOwner(userId);
       allow list: if isOwner(userId);
-      allow update: if isOwner(userId) && resource != null && request.resource.data.userId == userId;
-      allow delete: if isOwner(userId) && resource != null;
+      allow create: if isOwner(userId) && request.resource.data.userId == userId;
+      allow update: if isExistingOwner(userId) && request.resource.data.userId == userId;
+      allow delete: if isExistingOwner(userId);
     }
   }
 }
