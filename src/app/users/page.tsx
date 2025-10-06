@@ -1,10 +1,9 @@
 
 "use client";
 
-import { useCollection, useFirestore } from "@/firebase";
+import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
 import { collection, query } from "firebase/firestore";
 import Link from "next/link";
-import { useMemo } from "react";
 
 import { AppShell } from "@/components/app-shell";
 import { AuthGuard } from "@/components/auth-guard";
@@ -25,6 +24,7 @@ import {
 } from "@/components/ui/table";
 
 interface UserData {
+  id: string;
   firstName?: string;
   lastName?: string;
   email: string;
@@ -32,7 +32,7 @@ interface UserData {
 
 export default function UsersPage() {
   const firestore = useFirestore();
-  const usersQuery = useMemo(
+  const usersQuery = useMemoFirebase(
     () => (firestore ? query(collection(firestore, "users")) : null),
     [firestore]
   );

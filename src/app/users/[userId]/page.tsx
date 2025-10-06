@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useCollection, useDoc, useFirestore } from "@/firebase";
+import { useCollection, useDoc, useFirestore, useMemoFirebase } from "@/firebase";
 import { collection, doc } from "firebase/firestore";
 import { useParams } from "next/navigation";
 import { useMemo } from "react";
@@ -36,13 +36,13 @@ export default function UserCommitmentsPage() {
   const { userId } = useParams<{ userId: string }>();
   const firestore = useFirestore();
 
-  const userDocRef = useMemo(
+  const userDocRef = useMemoFirebase(
     () => (firestore && userId ? doc(firestore, "users", userId) : null),
     [firestore, userId]
   );
   const { data: user, isLoading: isUserLoading } = useDoc<UserData>(userDocRef);
 
-  const commitmentsQuery = useMemo(
+  const commitmentsQuery = useMemoFirebase(
     () =>
       firestore && userId
         ? collection(firestore, "users", userId, "salesCommitments")
