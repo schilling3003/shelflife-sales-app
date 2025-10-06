@@ -10,6 +10,7 @@ import { initializeApp, getApps } from 'firebase-admin/app';
 // For a production app, you would add a check here to ensure the CALLER is an admin.
 // For this development setup, we are trusting the client for simplicity.
 
+// Initialize the Firebase Admin SDK ONCE at the module level.
 if (!getApps().length) {
   initializeApp();
 }
