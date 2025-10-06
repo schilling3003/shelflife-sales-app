@@ -21,9 +21,12 @@ interface DashboardClientProps {
   initialProducts: Product[];
 }
 
+const ITEMS_PER_PAGE = 10;
+
 export function DashboardClient({ initialProducts }: DashboardClientProps) {
   const [products, setProducts] = useState<Product[]>(initialProducts);
   const [sort, setSort] = useState("sell-out-asc");
+  const [currentPage, setCurrentPage] = useState(1);
 
   const handleCommit = (productId: string, quantity: number) => {
     setProducts((prevProducts) =>
@@ -46,6 +49,22 @@ export function DashboardClient({ initialProducts }: DashboardClientProps) {
       }
     });
   }, [products, sort]);
+
+  const totalPages = Math.ceil(sortedProducts.length / ITEMS_PER_PAGE);
+
+  const paginatedProducts = useMemo(() => {
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    return sortedProducts.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  }, [sortedProducts, currentPage]);
+
+  const handlePreviousPage = () => {
+    setCurrentPage((prev) => Math.max(prev - 1, 1));
+  };
+
+  const handleNextPage = () => {
+    setCurrentPage((prev) => Math.min(prev + 1, totalPages));
+  };
+
 
   return (
     <>
@@ -76,13 +95,39 @@ export function DashboardClient({ initialProducts }: DashboardClientProps) {
         </div>
       </div>
       <div className="rounded-lg border shadow-sm">
-        <ProductTable products={sortedProducts} onCommit={handleCommit} />
+        <ProductTable products={paginatedProducts} onCommit={handleCommit} />
       </div>
-       {sortedProducts.length === 0 && (
+       {paginatedProducts.length === 0 && (
           <div className="text-center text-muted-foreground mt-8">
             No products found.
           </div>
         )}
+      <div className="flex items-center justify-between mt-4">
+        <div className="text-sm text-muted-foreground">
+            Showing {Math.min((currentPage - 1) * ITEMS_PER_PAGE + 1, sortedProducts.length)} to {Math.min(currentPage * ITEMS_PER_PAGE, sortedProducts.length)} of {sortedProducts.length} products
+        </div>
+        <div className="flex items-center gap-2">
+            <Button
+                variant="outline"
+                size="sm"
+                onClick={handlePreviousPage}
+                disabled={currentPage === 1}
+            >
+                Previous
+            </Button>
+            <span className="text-sm text-muted-foreground">
+                Page {currentPage} of {totalPages}
+            </span>
+            <Button
+                variant="outline"
+                size="sm"
+                onClick={handleNextPage}
+                disabled={currentPage === totalPages}
+            >
+                Next
+            </Button>
+        </div>
+    </div>
     </>
   );
 }
