@@ -2,16 +2,6 @@
 'use client';
 
 import { useState } from 'react';
-import { useFirestore } from '@/firebase';
-import {
-  writeBatch,
-  doc,
-  collection,
-  getDocs,
-  deleteDoc,
-  FirestoreError
-} from 'firebase/firestore';
-import { products as initialProducts } from '@/lib/data';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -25,91 +15,49 @@ import { AuthGuard } from '@/components/auth-guard';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Terminal } from 'lucide-react';
-import { errorEmitter, FirestorePermissionError } from '@/firebase';
-
+import { products } from '@/lib/data';
 
 export default function SeedDataPage() {
-  const firestore = useFirestore();
   const [isLoading, setIsLoading] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false); // We'll leave delete for a future step
   const { toast } = useToast();
 
-  const handleSeedData = () => {
-    if (!firestore) {
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: 'Firestore is not initialized.',
-      });
-      return;
-    }
+  const handleSeedData = async () => {
     setIsLoading(true);
-
-    const productsCollectionRef = collection(firestore, 'products');
-    const batch = writeBatch(firestore);
-
-    initialProducts.forEach((product) => {
-      const docRef = doc(productsCollectionRef, product.id);
-      batch.set(docRef, product);
-    });
-
-    batch.commit()
-      .then(() => {
-        toast({
-          title: 'Success!',
-          description: `${initialProducts.length} products have been seeded to your database.`,
-        });
-      })
-      .catch((serverError: FirestoreError) => {
-        // Since batch writes don't give specific document context on failure,
-        // we'll report the error on the collection path.
-        const contextualError = new FirestorePermissionError({
-          path: productsCollectionRef.path,
-          operation: 'write', // A batch can contain multiple operations
-          requestResourceData: { note: `Batch write of ${initialProducts.length} documents.` }
-        });
-        errorEmitter.emit('permission-error', contextualError);
-      })
-      .finally(() => {
-        setIsLoading(false);
+    try {
+      const response = await fetch('/api/seed-data', {
+        method: 'POST',
       });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to seed data.');
+      }
+
+      const data = await response.json();
+      toast({
+        title: 'Success!',
+        description: `${data.count} products have been seeded to your database.`,
+      });
+
+    } catch (error) {
+       const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+       toast({
+         variant: 'destructive',
+         title: 'Error Seeding Data',
+         description: errorMessage,
+       });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleDeleteData = async () => {
-    if (!firestore) {
-        toast({
-            variant: 'destructive',
-            title: 'Error',
-            description: 'Firestore is not initialized.',
-          });
-      return;
-    }
-    setIsDeleting(true);
-    try {
-      const productsCollectionRef = collection(firestore, 'products');
-      const querySnapshot = await getDocs(productsCollectionRef);
-      const batch = writeBatch(firestore);
-      let count = 0;
-      querySnapshot.forEach((document) => {
-        batch.delete(document.ref);
-        count++;
-      });
-      await batch.commit();
-      toast({
-        title: 'Success!',
-        description: `${count} products have been deleted from your database.`,
-      });
-    } catch (error) {
-        console.error('Error deleting data:', error);
-        const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
-        toast({
-          variant: 'destructive',
-          title: 'Error Deleting Data',
-          description: errorMessage,
-        });
-    } finally {
-        setIsDeleting(false);
-    }
+    // This functionality will need its own API route and admin action
+    toast({
+        title: 'Not Implemented',
+        description: 'Deleting all products requires a secure admin action.',
+    })
   }
 
   return (
@@ -128,8 +76,7 @@ export default function SeedDataPage() {
                     <Terminal className="h-4 w-4" />
                     <AlertTitle>For Development Only</AlertTitle>
                     <AlertDescription>
-                        This action will write multiple documents to your Firestore database.
-                        This will overwrite any existing products with the same ID.
+                        This action will write {products.length} documents to your Firestore database using a secure, server-side admin process.
                     </AlertDescription>
                 </Alert>
               <Button
