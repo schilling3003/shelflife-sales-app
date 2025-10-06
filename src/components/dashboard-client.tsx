@@ -15,18 +15,24 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { ProductTable } from "./product-table";
 
 interface DashboardClientProps {
   initialProducts: Product[];
 }
 
-const ITEMS_PER_PAGE = 10;
-
 export function DashboardClient({ initialProducts }: DashboardClientProps) {
   const [products, setProducts] = useState<Product[]>(initialProducts);
   const [sort, setSort] = useState("sell-out-asc");
   const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
 
   const handleCommit = (productId: string, quantity: number) => {
     setProducts((prevProducts) =>
@@ -50,12 +56,12 @@ export function DashboardClient({ initialProducts }: DashboardClientProps) {
     });
   }, [products, sort]);
 
-  const totalPages = Math.ceil(sortedProducts.length / ITEMS_PER_PAGE);
+  const totalPages = Math.ceil(sortedProducts.length / itemsPerPage);
 
   const paginatedProducts = useMemo(() => {
-    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-    return sortedProducts.slice(startIndex, startIndex + ITEMS_PER_PAGE);
-  }, [sortedProducts, currentPage]);
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    return sortedProducts.slice(startIndex, startIndex + itemsPerPage);
+  }, [sortedProducts, currentPage, itemsPerPage]);
 
   const handlePreviousPage = () => {
     setCurrentPage((prev) => Math.max(prev - 1, 1));
@@ -63,6 +69,11 @@ export function DashboardClient({ initialProducts }: DashboardClientProps) {
 
   const handleNextPage = () => {
     setCurrentPage((prev) => Math.min(prev + 1, totalPages));
+  };
+  
+  const handleItemsPerPageChange = (value: string) => {
+    setItemsPerPage(Number(value));
+    setCurrentPage(1);
   };
 
 
@@ -104,28 +115,46 @@ export function DashboardClient({ initialProducts }: DashboardClientProps) {
         )}
       <div className="flex items-center justify-between mt-4">
         <div className="text-sm text-muted-foreground">
-            Showing {Math.min((currentPage - 1) * ITEMS_PER_PAGE + 1, sortedProducts.length)} to {Math.min(currentPage * ITEMS_PER_PAGE, sortedProducts.length)} of {sortedProducts.length} products
+            Showing {Math.min((currentPage - 1) * itemsPerPage + 1, sortedProducts.length)} to {Math.min(currentPage * itemsPerPage, sortedProducts.length)} of {sortedProducts.length} products
         </div>
-        <div className="flex items-center gap-2">
-            <Button
-                variant="outline"
-                size="sm"
-                onClick={handlePreviousPage}
-                disabled={currentPage === 1}
-            >
-                Previous
-            </Button>
-            <span className="text-sm text-muted-foreground">
-                Page {currentPage} of {totalPages}
-            </span>
-            <Button
-                variant="outline"
-                size="sm"
-                onClick={handleNextPage}
-                disabled={currentPage === totalPages}
-            >
-                Next
-            </Button>
+        <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">Rows per page:</span>
+                <Select
+                    value={String(itemsPerPage)}
+                    onValueChange={handleItemsPerPageChange}
+                >
+                    <SelectTrigger className="h-8 w-[70px]">
+                        <SelectValue placeholder={itemsPerPage} />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="10">10</SelectItem>
+                        <SelectItem value="20">20</SelectItem>
+                        <SelectItem value="50">50</SelectItem>
+                    </SelectContent>
+                </Select>
+            </div>
+            <div className="flex items-center gap-2">
+                <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handlePreviousPage}
+                    disabled={currentPage === 1}
+                >
+                    Previous
+                </Button>
+                <span className="text-sm text-muted-foreground">
+                    Page {currentPage} of {totalPages}
+                </span>
+                <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleNextPage}
+                    disabled={currentPage === totalPages}
+                >
+                    Next
+                </Button>
+            </div>
         </div>
     </div>
     </>
