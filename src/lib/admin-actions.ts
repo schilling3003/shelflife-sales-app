@@ -1,27 +1,8 @@
-
 // IMPORTANT: This file should only be imported and used in server-side code.
 
-import { initializeApp, getApps, App } from 'firebase-admin/app';
-import { getAuth, Auth } from 'firebase-admin/auth';
-import { getFirestore, Firestore } from 'firebase-admin/firestore';
+import { auth, db } from '@/lib/firebase-admin'; // ✅ IMPORT from the new module
 import { products } from './data'; 
 import type { Product } from './types';
-
-// Declare db and auth variables that will be initialized later.
-let db: Firestore;
-let auth: Auth;
-
-// Standard pattern to initialize the Admin SDK in a server environment like Next.js/App Hosting.
-// This ensures the app is only initialized once.
-if (!getApps().length) {
-  // When running in a Google Cloud environment (like App Hosting), the SDK can
-  // automatically discover the project credentials.
-  initializeApp();
-}
-
-// Now that we're sure an app is initialized, get the Firestore and Auth services.
-db = getFirestore();
-auth = getAuth();
 
 
 export async function setAdminClaim(uid: string): Promise<void> {
