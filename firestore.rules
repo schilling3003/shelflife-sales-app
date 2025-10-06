@@ -2,123 +2,108 @@
  * @fileoverview Firestore Security Rules for ShelfLife Sales application.
  *
  * Core Philosophy:
- * This ruleset enforces a user-ownership model for user profiles and sales commitments,
- * while allowing public read access to product information.  Authorization Independence
- * is strictly enforced, eliminating the need for `get()` calls in rules.
+ * This ruleset enforces a strict user-ownership model for user profiles and sales commitments.
+ * Product information is globally readable.
  *
  * Data Structure:
- * - /users/{userId}: Stores user profiles; accessible only by the user.
- * - /products/{productId}: Stores product information; globally readable.
- * - /users/{userId}/salesCommitments/{salesCommitmentId}: Stores sales commitments; accessible only by the user.
+ * - /users/{userId}: Stores user profile information. Only the user can read/write their own profile.
+ * - /products/{productId}: Stores product information. This collection is publicly readable.
+ * - /users/{userId}/salesCommitments/{salesCommitmentId}: Stores sales commitments made by a specific user.
+ *   Only the owning user can read/write these commitments.
  *
  * Key Security Decisions:
- * - Users can only access their own data under /users/{userId}.
- * - Products are publicly readable but not writable through the client.
- * - Sales commitments are owned by the user and stored under their profile.
- * - No user listing is allowed to protect privacy.
+ * - User listing is explicitly denied to protect user privacy.
+ * - Product data is globally readable to allow easy access to product information.
+ * - All write operations are protected by authorization checks based on user identity and document ownership.
  *
  * Denormalization for Authorization:
- * - SalesCommitments are stored as subcollections of users to avoid needing to query across collections to validate ownership.
+ * - The data structure itself (nesting sales commitments under /users/{userId}) serves as denormalization,
+ *   allowing simple path-based rules without needing to read other documents.
  */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Enforces access control for user profiles.
+     * @description Prevents listing all users to protect privacy.
+     * @path /users
+     * @allow None - Listing all users is not permitted.
+     * @deny list - Always denies listing all users.
+     * @principle Prevents unauthorized listing of user data.
+     */
+    match /users {
+      allow list: if false;
+    }
+
+    /**
+     * @description Manages user profiles. Only the user can read/write their own profile.
      * @path /users/{userId}
-     * @allow (create) User with ID 'user123' can create their own profile.
-     *        Request: auth.uid = 'user123', resource.data.id = 'user123'
-     * @allow (get) User with ID 'user123' can read their own profile.
-     *        Request: auth.uid = 'user123'
-     * @allow (update) User with ID 'user123' can update their own profile.
-     *        Request: auth.uid = 'user123'
-     * @allow (delete) User with ID 'user123' can delete their own profile.
-     *        Request: auth.uid = 'user123'
-     * @deny (create) User with ID 'user123' cannot create a profile with a different ID.
-     *       Request: auth.uid = 'user123', resource.data.id = 'user456'
-     * @deny (get) User with ID 'user456' cannot read user 'user123' profile.
-     *       Request: auth.uid = 'user456'
-     * @principle Enforces document ownership for all operations.
+     * @allow (get, create, update, delete) - Authenticated user with matching {userId}.
+     *  (create) - Authenticated user creates their own profile where request.resource.data.id == request.auth.uid.
+     *  (update) - Authenticated user updates their own profile where resource.data.id == request.auth.uid.
+     *  (delete) - Authenticated user deletes their own profile where resource.data.id == request.auth.uid.
+     * @deny (get, create, update, delete) - Any other user attempting to access this profile.
+     *  (create) - Any user creates a profile where request.resource.data.id != request.auth.uid.
+     *  (update) - Any user updates a profile where resource.data.id != request.auth.uid.
+     *  (delete) - Any user deletes a profile where resource.data.id != request.auth.uid.
+     * @principle Enforces document ownership for reads and writes.
      */
     match /users/{userId} {
-      function isSignedIn() {
-        return request.auth != null;
-      }
-
-      function isOwner(userId) {
-        return request.auth.uid == userId;
-      }
-
-      function isExistingOwner(userId) {
-        return isOwner(userId) && resource != null;
-      }
-
-      allow get: if isOwner(userId);
+      allow get: if isSignedIn() && isOwner(userId);
+      allow create: if isSignedIn() && isOwner(userId) && request.resource.data.id == request.auth.uid;
+      allow update: if isSignedIn() && isExistingOwner(userId) && resource.data.id == userId;
+      allow delete: if isSignedIn() && isExistingOwner(userId);
       allow list: if false;
-
-      allow create: if isOwner(userId) && request.resource.data.id == userId;
-      allow update: if isOwner(userId);
-      allow delete: if isOwner(userId);
     }
 
     /**
-     * @description Allows public read access to product information.
+     * @description Manages product information. This collection is globally readable.
      * @path /products/{productId}
-     * @allow (get) Any user can read any product.
-     *        Request: auth.uid = null
-     * @allow (list) Any user can list products.
-     *        Request: auth.uid = null
-     * @deny (create) No user can create a product document via client.
-     * @deny (update) No user can update a product document via client.
-     * @deny (delete) No user can delete a product document via client.
-     * @principle Allows public read access with no write access via client.
+     * @allow get, list - Any user can read product information.
+     * @deny create, update, delete - Only the application can modify products.
+     * @principle Allows public read access while restricting write access to authorized users only (not implemented here).
      */
     match /products/{productId} {
-      allow get: if true;
-      allow list: if true;
-      allow create: if false;
-      allow update: if false;
-      allow delete: if false;
+      allow get, list: if true;
+      allow create, update, delete: if false;
     }
 
     /**
-     * @description Enforces access control for sales commitments.
+     * @description Manages sales commitments for a specific user. Only the user can read/write their own commitments.
      * @path /users/{userId}/salesCommitments/{salesCommitmentId}
-     * @allow (create) User with ID 'user123' can create a sales commitment under their profile.
-     *        Request: auth.uid = 'user123'
-     * @allow (get) User with ID 'user123' can read their own sales commitment.
-     *        Request: auth.uid = 'user123'
-     * @allow (list) User with ID 'user123' can list sales commitments under their profile.
-     *        Request: auth.uid = 'user123'
-     * @allow (update) User with ID 'user123' can update their own sales commitment.
-     *        Request: auth.uid = 'user123'
-     * @allow (delete) User with ID 'user123' can delete their own sales commitment.
-     *        Request: auth.uid = 'user123'
-     * @deny (create) User with ID 'user456' cannot create a sales commitment under user 'user123'.
-     *       Request: auth.uid = 'user456'
-     * @deny (get) User with ID 'user456' cannot read user 'user123' sales commitment.
-     *       Request: auth.uid = 'user456'
-     * @principle Enforces path-based ownership for sales commitments.
+     * @allow (get, create, update, delete, list) - Authenticated user with matching {userId}.
+     *  (create) - Authenticated user creates a commitment under their own user ID.
+     *  (update) - Authenticated user updates a commitment under their own user ID.
+     *  (delete) - Authenticated user deletes a commitment under their own user ID.
+     *  (list) - Authenticated user lists commitments under their own user ID.
+     * @deny (get, create, update, delete, list) - Any other user attempting to access these commitments.
+     *  (create) - Any user creates a commitment under a different user ID.
+     *  (update) - Any user updates a commitment under a different user ID.
+     *  (delete) - Any user deletes a commitment under a different user ID.
+     *  (list) - Any user lists commitments under a different user ID.
+     * @principle Enforces path-based ownership, restricting access to a user's own data.
      */
     match /users/{userId}/salesCommitments/{salesCommitmentId} {
-      function isSignedIn() {
-        return request.auth != null;
-      }
-
-      function isOwner(userId) {
-        return request.auth.uid == userId;
-      }
-
-      function isExistingOwner(userId) {
-        return isOwner(userId) && resource != null;
-      }
-
-      allow get: if isOwner(userId);
-      allow list: if isOwner(userId);
-      allow create: if isOwner(userId);
-      allow update: if isOwner(userId);
-      allow delete: if isOwner(userId);
+      allow get: if isSignedIn() && isOwner(userId);
+      allow create: if isSignedIn() && isOwner(userId) && request.resource.data.userId == userId;
+      allow update: if isSignedIn() && isExistingOwner(userId) && resource.data.userId == userId;
+      allow delete: if isSignedIn() && isExistingOwner(userId);
+      allow list: if isSignedIn() && isOwner(userId);
     }
+  }
+
+  // Helper function to determine if the user is signed in.
+  function isSignedIn() {
+    return request.auth != null;
+  }
+
+  // Helper function to determine if the user is the owner of the resource.
+  function isOwner(userId) {
+    return request.auth.uid == userId;
+  }
+
+    // Helper function to determine if the user is the existing owner of the resource.
+  function isExistingOwner(userId) {
+    return isOwner(userId) && resource != null;
   }
 }
