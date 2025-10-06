@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 import { CommitDialog } from "./commit-dialog";
+import { Progress } from "@/components/ui/progress";
 
 interface ProductTableProps {
   products: Product[];
@@ -46,7 +47,9 @@ export function ProductTable({ products, onCommit }: ProductTableProps) {
     <Table>
       <TableHeader>
         <TableRow>
-          <TableHead>Product</TableHead>
+          <TableHead>Description</TableHead>
+          <TableHead>Item Code</TableHead>
+          <TableHead>Brand</TableHead>
           <TableHead>Status</TableHead>
           <TableHead>Division</TableHead>
           <TableHead>Pack</TableHead>
@@ -54,6 +57,7 @@ export function ProductTable({ products, onCommit }: ProductTableProps) {
           <TableHead>Min Exp</TableHead>
           <TableHead>Max Exp</TableHead>
           <TableHead>Sell Out</TableHead>
+          <TableHead className="w-[150px] text-right">Inventory</TableHead>
           <TableHead className="w-[100px]"></TableHead>
         </TableRow>
       </TableHeader>
@@ -62,28 +66,37 @@ export function ProductTable({ products, onCommit }: ProductTableProps) {
           const status = getStatus(product);
           const { label, className } = statusConfig[status];
           const daysToSellOut = differenceInDays(new Date(product.projectedSellOut), new Date());
+          const availableQuantity = product.quantityOnHand - product.committedQuantity;
+          const commitmentPercentage = product.quantityOnHand > 0 ? (product.committedQuantity / product.quantityOnHand) * 100 : 0;
 
           return (
             <TableRow key={product.id}>
-              <TableCell className="py-2">
-                <div className="font-medium font-headline">{product.description}</div>
-                <div className="text-xs text-muted-foreground">{product.brand}</div>
-                <div className="text-xs text-muted-foreground font-mono">{product.itemCode}</div>
-              </TableCell>
-              <TableCell className="py-2">
+              <TableCell className="py-1 font-medium font-headline">{product.description}</TableCell>
+              <TableCell className="py-1 font-mono">{product.itemCode}</TableCell>
+              <TableCell className="py-1 text-muted-foreground">{product.brand}</TableCell>
+              <TableCell className="py-1">
                 <Badge variant="outline" className={cn("font-semibold", className)}>
                   {label}
                 </Badge>
               </TableCell>
-              <TableCell className="py-2">{product.division}</TableCell>
-              <TableCell className="py-2">{product.packSize}</TableCell>
-              <TableCell className="py-2">{product.size}</TableCell>
-              <TableCell className="py-2">{format(new Date(product.minExpiry), "MM/dd/yy")}</TableCell>
-              <TableCell className="py-2">{format(new Date(product.maxExpiry), "MM/dd/yy")}</TableCell>
-              <TableCell className={cn("py-2", daysToSellOut < 0 && "text-destructive")}>
+              <TableCell className="py-1">{product.division}</TableCell>
+              <TableCell className="py-1">{product.packSize}</TableCell>
+              <TableCell className="py-1">{product.size}</TableCell>
+              <TableCell className="py-1">{format(new Date(product.minExpiry), "MM/dd/yy")}</TableCell>
+              <TableCell className="py-1">{format(new Date(product.maxExpiry), "MM/dd/yy")}</TableCell>
+              <TableCell className={cn("py-1", daysToSellOut < 0 && "text-destructive")}>
                 {format(new Date(product.projectedSellOut), "MM/dd/yy")}
               </TableCell>
-              <TableCell className="py-2 text-right">
+               <TableCell className="py-1 text-right">
+                <div className="flex flex-col items-end">
+                   <div className="font-medium">{availableQuantity.toLocaleString()} <span className="text-xs text-muted-foreground">avail</span></div>
+                   <div className="text-xs text-muted-foreground">
+                     {product.committedQuantity.toLocaleString()} of {product.quantityOnHand.toLocaleString()} committed
+                   </div>
+                   <Progress value={commitmentPercentage} className="h-1 mt-1 w-24" />
+                </div>
+              </TableCell>
+              <TableCell className="py-1 text-right">
                 <CommitDialog product={product} onCommit={onCommit} />
               </TableCell>
             </TableRow>
