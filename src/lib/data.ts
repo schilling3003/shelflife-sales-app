@@ -6,7 +6,7 @@ const today = new Date();
 export const products: Product[] = [
   {
     id: 'prod_1',
-    division: 10,
+    division: 1,
     itemCode: 'BK-001',
     brand: 'Artisan Bakes',
     description: 'Sourdough Loaf',
@@ -20,7 +20,7 @@ export const products: Product[] = [
   },
   {
     id: 'prod_2',
-    division: 20,
+    division: 2,
     itemCode: 'DY-015',
     brand: 'Farm Fresh',
     description: 'Organic Greek Yogurt',
@@ -34,7 +34,7 @@ export const products: Product[] = [
   },
   {
     id: 'prod_3',
-    division: 30,
+    division: 3,
     itemCode: 'PR-052',
     brand: 'Global Produce',
     description: 'Avocado Hass',
@@ -48,7 +48,7 @@ export const products: Product[] = [
   },
   {
     id: 'prod_4',
-    division: 40,
+    division: 4,
     itemCode: 'BV-101',
     brand: 'AquaPure',
     description: 'Sparkling Mineral Water',
@@ -62,7 +62,7 @@ export const products: Product[] = [
   },
   {
     id: 'prod_5',
-    division: 50,
+    division: 5,
     itemCode: 'FZ-033',
     brand: 'Napoli Pizza Co.',
     description: 'Neapolitan Pizza',
@@ -76,7 +76,7 @@ export const products: Product[] = [
   },
   {
     id: 'prod_6',
-    division: 60,
+    division: 6,
     itemCode: 'SN-089',
     brand: 'Salty Snacks',
     description: 'Sea Salt Potato Chips',
@@ -90,7 +90,7 @@ export const products: Product[] = [
   },
   {
     id: 'prod_7',
-    division: 20,
+    division: 2,
     itemCode: 'DY-004',
     brand: 'Farm Fresh',
     description: 'Whole Milk Gallon',
@@ -104,7 +104,7 @@ export const products: Product[] = [
   },
     {
     id: 'prod_8',
-    division: 70,
+    division: 7,
     itemCode: 'MT-007',
     brand: 'Prime Cuts',
     description: 'Grass-fed Ribeye Steak',
@@ -118,7 +118,7 @@ export const products: Product[] = [
   },
   {
     id: 'prod_9',
-    division: 10,
+    division: 1,
     itemCode: 'BK-005',
     brand: 'Artisan Bakes',
     description: 'Croissant',
@@ -132,7 +132,7 @@ export const products: Product[] = [
   },
   {
     id: 'prod_10',
-    division: 30,
+    division: 3,
     itemCode: 'PR-021',
     brand: 'Global Produce',
     description: 'Organic Bananas',
@@ -146,7 +146,7 @@ export const products: Product[] = [
   },
   {
     id: 'prod_11',
-    division: 20,
+    division: 2,
     itemCode: 'DY-030',
     brand: 'Farm Fresh',
     description: 'Cheddar Cheese Block',
@@ -160,7 +160,7 @@ export const products: Product[] = [
   },
   {
     id: 'prod_12',
-    division: 40,
+    division: 4,
     itemCode: 'BV-210',
     brand: 'Morning Buzz',
     description: 'Cold Brew Coffee',
@@ -174,7 +174,7 @@ export const products: Product[] = [
   },
   {
     id: 'prod_13',
-    division: 70,
+    division: 7,
     itemCode: 'MT-019',
     brand: 'Prime Cuts',
     description: 'Organic Chicken Breast',
@@ -188,7 +188,7 @@ export const products: Product[] = [
   },
   {
     id: 'prod_14',
-    division: 50,
+    division: 5,
     itemCode: 'FZ-041',
     brand: 'Green Giant',
     description: 'Frozen Peas',
@@ -202,7 +202,7 @@ export const products: Product[] = [
   },
   {
     id: 'prod_15',
-    division: 60,
+    division: 6,
     itemCode: 'SN-105',
     brand: 'Kettle Brand',
     description: 'Jalapeño Potato Chips',
@@ -216,7 +216,7 @@ export const products: Product[] = [
   },
   {
     id: 'prod_16',
-    division: 10,
+    division: 1,
     itemCode: 'BK-012',
     brand: 'Dave\'s Killer Bread',
     description: '21 Whole Grains and Seeds',
@@ -230,7 +230,7 @@ export const products: Product[] = [
   },
   {
     id: 'prod_17',
-    division: 20,
+    division: 2,
     itemCode: 'DY-045',
     brand: 'Chobani',
     description: 'Flip Strawberry Cheesecake',
@@ -244,7 +244,7 @@ export const products: Product[] = [
   },
   {
     id: 'prod_18',
-    division: 30,
+    division: 3,
     itemCode: 'PR-088',
     brand: 'Driscoll\'s',
     description: 'Organic Strawberries',
@@ -258,7 +258,7 @@ export const products: Product[] = [
   },
   {
     id: 'prod_19',
-    division: 70,
+    division: 7,
     itemCode: 'SF-001',
     brand: 'Ocean\'s Catch',
     description: 'Wild Salmon Fillet',
@@ -272,7 +272,7 @@ export const products: Product[] = [
   },
   {
     id: 'prod_20',
-    division: 80,
+    division: 8,
     itemCode: 'CN-001',
     brand: 'Sweet Tooth',
     description: 'Chocolate Chip Cookies',
@@ -286,7 +286,7 @@ export const products: Product[] = [
   },
   {
     id: 'prod_21',
-    division: 80,
+    division: 8,
     itemCode: 'CN-002',
     brand: 'Sweet Tooth',
     description: 'Oatmeal Raisin Cookies',
@@ -300,7 +300,7 @@ export const products: Product[] = [
   },
   {
     id: 'prod_22',
-    division: 40,
+    division: 4,
     itemCode: 'BV-300',
     brand: 'Pure Leaf',
     description: 'Unsweetened Black Tea',
@@ -314,7 +314,7 @@ export const products: Product[] = [
   },
   {
     id: 'prod_23',
-    division: 10,
+    division: 1,
     itemCode: 'BK-020',
     brand: 'King\'s Hawaiian',
     description: 'Original Hawaiian Sweet Rolls',
@@ -328,7 +328,7 @@ export const products: Product[] = [
   },
   {
     id: 'prod_24',
-    division: 20,
+    division: 2,
     itemCode: 'DY-050',
     brand: 'Tillamook',
     description: 'Medium Cheddar Cheese Snack Portions',
@@ -342,7 +342,7 @@ export const products: Product[] = [
   },
   {
     id: 'prod_25',
-    division: 30,
+    division: 3,
     itemCode: 'PR-101',
     brand: 'Wonderful',
     description: 'Pistachios, Roasted & Salted',
@@ -356,7 +356,7 @@ export const products: Product[] = [
   },
   {
     id: 'prod_26',
-    division: 70,
+    division: 7,
     itemCode: 'SF-010',
     brand: 'Gorton\'s',
     description: 'Crispy Battered Fish Fillets',
@@ -370,7 +370,7 @@ export const products: Product[] = [
   },
   {
     id: 'prod_27',
-    division: 60,
+    division: 6,
     itemCode: 'SN-112',
     brand: 'Doritos',
     description: 'Nacho Cheese',
@@ -384,7 +384,7 @@ export const products: Product[] = [
   },
   {
     id: 'prod_28',
-    division: 50,
+    division: 5,
     itemCode: 'FZ-055',
     brand: 'DiGiorno',
     description: 'Three Meat Frozen Pizza',
@@ -398,7 +398,7 @@ export const products: Product[] = [
   },
   {
     id: 'prod_29',
-    division: 40,
+    division: 4,
     itemCode: 'BV-401',
     brand: 'Coca-Cola',
     description: 'Classic Coke Cans',
@@ -412,7 +412,7 @@ export const products: Product[] = [
   },
   {
     id: 'prod_30',
-    division: 80,
+    division: 8,
     itemCode: 'CN-015',
     brand: 'Hostess',
     description: 'Twinkies',

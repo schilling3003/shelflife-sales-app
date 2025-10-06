@@ -23,6 +23,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ProductTable } from "./product-table";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 
 interface DashboardClientProps {
   initialProducts: Product[];
@@ -33,6 +35,9 @@ export function DashboardClient({ initialProducts }: DashboardClientProps) {
   const [sort, setSort] = useState("sell-out-asc");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [divisionFilter, setDivisionFilter] = useState("all");
+  const [brandFilter, setBrandFilter] = useState("all");
+  const [showOnlyAvailable, setShowOnlyAvailable] = useState(false);
 
   const handleCommit = (productId: string, quantity: number) => {
     setProducts((prevProducts) =>
@@ -43,18 +48,57 @@ export function DashboardClient({ initialProducts }: DashboardClientProps) {
       )
     );
   };
+  
+  const divisions = useMemo(() => ["all", ...Array.from(new Set(initialProducts.map(p => p.division.toString()))).sort((a,b) => Number(a) - Number(b))], [initialProducts]);
+  const brands = useMemo(() => ["all", ...Array.from(new Set(initialProducts.map(p => p.brand))).sort()], [initialProducts]);
+
+  const filteredProducts = useMemo(() => {
+    let filtered = products;
+
+    if (divisionFilter !== "all") {
+      filtered = filtered.filter(p => p.division.toString() === divisionFilter);
+    }
+    
+    if (brandFilter !== "all") {
+      filtered = filtered.filter(p => p.brand === brandFilter);
+    }
+
+    if (showOnlyAvailable) {
+        filtered = filtered.filter(p => p.quantityOnHand > p.committedQuantity);
+    }
+
+    return filtered;
+  }, [products, divisionFilter, brandFilter, showOnlyAvailable]);
 
   const sortedProducts = useMemo(() => {
-    return [...products].sort((a, b) => {
+    return [...filteredProducts].sort((a, b) => {
+      const availableA = a.quantityOnHand - a.committedQuantity;
+      const availableB = b.quantityOnHand - b.committedQuantity;
       const dateA = new Date(a.projectedSellOut);
       const dateB = new Date(b.projectedSellOut);
-      if (sort === "sell-out-asc") {
-        return dateA.getTime() - dateB.getTime();
-      } else {
-        return dateB.getTime() - dateA.getTime();
+
+      switch (sort) {
+        case "sell-out-asc":
+          return dateA.getTime() - dateB.getTime();
+        case "sell-out-desc":
+            return dateB.getTime() - dateA.getTime();
+        case "desc-asc":
+          return a.description.localeCompare(b.description);
+        case "desc-desc":
+          return b.description.localeCompare(a.description);
+        case "brand-asc":
+          return a.brand.localeCompare(b.brand);
+        case "brand-desc":
+          return b.brand.localeCompare(a.brand);
+        case "available-asc":
+          return availableA - availableB;
+        case "available-desc":
+            return availableB - availableA;
+        default:
+          return 0;
       }
     });
-  }, [products, sort]);
+  }, [filteredProducts, sort]);
 
   const totalPages = Math.ceil(sortedProducts.length / itemsPerPage);
 
@@ -79,7 +123,33 @@ export function DashboardClient({ initialProducts }: DashboardClientProps) {
 
   return (
     <>
-      <div className="flex items-center">
+      <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2">
+            <Label htmlFor="division-filter">Division</Label>
+            <Select value={divisionFilter} onValueChange={setDivisionFilter}>
+                <SelectTrigger id="division-filter" className="w-[100px]">
+                    <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                    {divisions.map(d => <SelectItem key={d} value={d}>{d === 'all' ? 'All' : d}</SelectItem>)}
+                </SelectContent>
+            </Select>
+        </div>
+        <div className="flex items-center gap-2">
+            <Label htmlFor="brand-filter">Brand</Label>
+            <Select value={brandFilter} onValueChange={setBrandFilter}>
+                <SelectTrigger id="brand-filter" className="w-[180px]">
+                    <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                    {brands.map(b => <SelectItem key={b} value={b}>{b === 'all' ? 'All' : b}</SelectItem>)}
+                </SelectContent>
+            </Select>
+        </div>
+        <div className="flex items-center gap-2">
+            <Checkbox id="show-available" checked={showOnlyAvailable} onCheckedChange={(checked) => setShowOnlyAvailable(!!checked)} />
+            <Label htmlFor="show-available">Show Available Only</Label>
+        </div>
         <div className="ml-auto flex items-center gap-2">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -100,6 +170,24 @@ export function DashboardClient({ initialProducts }: DashboardClientProps) {
                 <DropdownMenuRadioItem value="sell-out-desc">
                   Sell-out Date: Desc
                 </DropdownMenuRadioItem>
+                <DropdownMenuRadioItem value="desc-asc">
+                  Description: A-Z
+                </DropdownMenuRadioItem>
+                <DropdownMenuRadioItem value="desc-desc">
+                  Description: Z-A
+                </DropdownMenuRadioItem>
+                <DropdownMenuRadioItem value="brand-asc">
+                  Brand: A-Z
+                </DropdownMenuRadioItem>
+                <DropdownMenuRadioItem value="brand-desc">
+                  Brand: Z-A
+                </DropdownMenuRadioItem>
+                <DropdownMenuRadioItem value="available-asc">
+                  Available: Low to High
+                </DropdownMenuRadioItem>
+                <DropdownMenuRadioItem value="available-desc">
+                  Available: High to Low
+                </DropdownMenuRadioItem>
               </DropdownMenuRadioGroup>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -115,7 +203,7 @@ export function DashboardClient({ initialProducts }: DashboardClientProps) {
         )}
       <div className="flex items-center justify-between mt-4">
         <div className="text-sm text-muted-foreground">
-            Showing {Math.min((currentPage - 1) * itemsPerPage + 1, sortedProducts.length)} to {Math.min(currentPage * itemsPerPage, sortedProducts.length)} of {sortedProducts.length} products
+            Showing {paginatedProducts.length > 0 ? Math.min((currentPage - 1) * itemsPerPage + 1, sortedProducts.length) : 0} to {Math.min(currentPage * itemsPerPage, sortedProducts.length)} of {sortedProducts.length} products
         </div>
         <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
@@ -150,7 +238,7 @@ export function DashboardClient({ initialProducts }: DashboardClientProps) {
                     variant="outline"
                     size="sm"
                     onClick={handleNextPage}
-                    disabled={currentPage === totalPages}
+                    disabled={currentPage === totalPages || totalPages === 0}
                 >
                     Next
                 </Button>
