@@ -4,8 +4,10 @@ export type Product = {
   id: string;
   division: string;
   itemCode: string;
-  packSize: number;
+  brand: string;
   description: string;
+  packSize: number;
+  size: string;
   minExpiry: string; // ISO Date string
   maxExpiry: string; // ISO Date string
   projectedSellOut: string; // ISO Date string

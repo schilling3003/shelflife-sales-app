@@ -3,7 +3,6 @@
 import { differenceInDays, format } from "date-fns";
 import type { Product, ProductStatus } from "@/lib/types";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
 import {
   Table,
   TableBody,
@@ -49,10 +48,12 @@ export function ProductTable({ products, onCommit }: ProductTableProps) {
         <TableRow>
           <TableHead>Product</TableHead>
           <TableHead>Status</TableHead>
-          <TableHead className="text-right">On Hand</TableHead>
-          <TableHead>Commitment</TableHead>
-          <TableHead className="text-right">Shelf Life</TableHead>
-          <TableHead className="text-right">Sell By</TableHead>
+          <TableHead>Division</TableHead>
+          <TableHead>Pack</TableHead>
+          <TableHead>Size</TableHead>
+          <TableHead>Min Exp</TableHead>
+          <TableHead>Max Exp</TableHead>
+          <TableHead>Sell Out</TableHead>
           <TableHead className="w-[100px]"></TableHead>
         </TableRow>
       </TableHeader>
@@ -61,36 +62,28 @@ export function ProductTable({ products, onCommit }: ProductTableProps) {
           const status = getStatus(product);
           const { label, className } = statusConfig[status];
           const daysToSellOut = differenceInDays(new Date(product.projectedSellOut), new Date());
-          const commitProgress = Math.min(
-            (product.committedQuantity / product.quantityOnHand) * 100,
-            100
-          );
 
           return (
             <TableRow key={product.id}>
-              <TableCell>
+              <TableCell className="py-2">
                 <div className="font-medium font-headline">{product.description}</div>
-                <div className="text-sm text-muted-foreground font-mono">{product.itemCode}</div>
+                <div className="text-xs text-muted-foreground">{product.brand}</div>
+                <div className="text-xs text-muted-foreground font-mono">{product.itemCode}</div>
               </TableCell>
-              <TableCell>
+              <TableCell className="py-2">
                 <Badge variant="outline" className={cn("font-semibold", className)}>
                   {label}
                 </Badge>
               </TableCell>
-              <TableCell className="text-right">{product.quantityOnHand.toLocaleString()}</TableCell>
-              <TableCell>
-                <div className="flex flex-col gap-1">
-                  <Progress value={commitProgress} className="h-2" />
-                  <div className="text-xs text-muted-foreground">
-                    {product.committedQuantity.toLocaleString()} / {product.quantityOnHand.toLocaleString()} ({commitProgress.toFixed(0)}%)
-                  </div>
-                </div>
+              <TableCell className="py-2">{product.division}</TableCell>
+              <TableCell className="py-2">{product.packSize}</TableCell>
+              <TableCell className="py-2">{product.size}</TableCell>
+              <TableCell className="py-2">{format(new Date(product.minExpiry), "MM/dd/yy")}</TableCell>
+              <TableCell className="py-2">{format(new Date(product.maxExpiry), "MM/dd/yy")}</TableCell>
+              <TableCell className={cn("py-2", daysToSellOut < 0 && "text-destructive")}>
+                {format(new Date(product.projectedSellOut), "MM/dd/yy")}
               </TableCell>
-              <TableCell className="text-right">{differenceInDays(new Date(product.minExpiry), new Date())} days</TableCell>
-              <TableCell className={cn("text-right", daysToSellOut < 0 && "text-destructive")}>
-                {format(new Date(product.projectedSellOut), "MMM d, yyyy")}
-              </TableCell>
-              <TableCell className="text-right">
+              <TableCell className="py-2 text-right">
                 <CommitDialog product={product} onCommit={onCommit} />
               </TableCell>
             </TableRow>
