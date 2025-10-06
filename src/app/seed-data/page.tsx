@@ -9,6 +9,7 @@ import {
   collection,
   getDocs,
   deleteDoc,
+  FirestoreError
 } from 'firebase/firestore';
 import { products as initialProducts } from '@/lib/data';
 import { Button } from '@/components/ui/button';
@@ -24,6 +25,8 @@ import { AuthGuard } from '@/components/auth-guard';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Terminal } from 'lucide-react';
+import { errorEmitter, FirestorePermissionError } from '@/firebase';
+
 
 export default function SeedDataPage() {
   const firestore = useFirestore();
@@ -31,7 +34,7 @@ export default function SeedDataPage() {
   const [isDeleting, setIsDeleting] = useState(false);
   const { toast } = useToast();
 
-  const handleSeedData = async () => {
+  const handleSeedData = () => {
     if (!firestore) {
       toast({
         variant: 'destructive',
@@ -41,31 +44,35 @@ export default function SeedDataPage() {
       return;
     }
     setIsLoading(true);
-    try {
-      const productsCollectionRef = collection(firestore, 'products');
-      const batch = writeBatch(firestore);
 
-      initialProducts.forEach((product) => {
-        const docRef = doc(productsCollectionRef, product.id);
-        batch.set(docRef, product);
-      });
+    const productsCollectionRef = collection(firestore, 'products');
+    const batch = writeBatch(firestore);
 
-      await batch.commit();
-      toast({
-        title: 'Success!',
-        description: `${initialProducts.length} products have been seeded to your database.`,
+    initialProducts.forEach((product) => {
+      const docRef = doc(productsCollectionRef, product.id);
+      batch.set(docRef, product);
+    });
+
+    batch.commit()
+      .then(() => {
+        toast({
+          title: 'Success!',
+          description: `${initialProducts.length} products have been seeded to your database.`,
+        });
+      })
+      .catch((serverError: FirestoreError) => {
+        // Since batch writes don't give specific document context on failure,
+        // we'll report the error on the collection path.
+        const contextualError = new FirestorePermissionError({
+          path: productsCollectionRef.path,
+          operation: 'write', // A batch can contain multiple operations
+          requestResourceData: { note: `Batch write of ${initialProducts.length} documents.` }
+        });
+        errorEmitter.emit('permission-error', contextualError);
+      })
+      .finally(() => {
+        setIsLoading(false);
       });
-    } catch (error) {
-      console.error('Error seeding data:', error);
-      const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
-      toast({
-        variant: 'destructive',
-        title: 'Error Seeding Data',
-        description: errorMessage,
-      });
-    } finally {
-      setIsLoading(false);
-    }
   };
 
   const handleDeleteData = async () => {
@@ -147,5 +154,3 @@ export default function SeedDataPage() {
     </AuthGuard>
   );
 }
-
-    
