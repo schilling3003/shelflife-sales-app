@@ -1,7 +1,7 @@
 
 // IMPORTANT: This file should only be imported and used in server-side code.
 
-import { initializeApp, getApps, getApp } from 'firebase-admin/app';
+import { initializeApp, getApps, cert, getApp } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
 import { products } from './data'; 
 
@@ -9,11 +9,11 @@ import { products } from './data';
 // can automatically discover the correct credentials and project configuration.
 // We ensure we only initialize the app once.
 if (!getApps().length) {
+  // Initialize with application default credentials.
   initializeApp();
 }
 
-const adminApp = getApp();
-const db = getFirestore(adminApp);
+const db = getFirestore();
 
 export async function seedProductsData() {
   console.log('Starting to seed product data via Admin SDK...');
