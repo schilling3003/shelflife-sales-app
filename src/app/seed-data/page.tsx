@@ -9,36 +9,100 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
+  CardFooter
 } from '@/components/ui/card';
 import { AppShell } from '@/components/app-shell';
 import { AuthGuard } from '@/components/auth-guard';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Terminal } from 'lucide-react';
+import { Terminal, UserCog } from 'lucide-react';
 import { products } from '@/lib/data';
+import { useFirestore, useUser } from '@/firebase';
+import { writeBatch, doc, collection } from 'firebase/firestore';
 
 export default function SeedDataPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false); // We'll leave delete for a future step
+  const [isAdminLoading, setIsAdminLoading] = useState(false);
   const { toast } = useToast();
+  const firestore = useFirestore();
+  const { user } = useUser();
 
-  const handleSeedData = async () => {
-    setIsLoading(true);
+
+  const handleMakeAdmin = async () => {
+    if (!user) {
+      toast({ variant: "destructive", title: "Not signed in", description: "You must be signed in to become an admin." });
+      return;
+    }
+    setIsAdminLoading(true);
     try {
-      const response = await fetch('/api/seed-data', {
+      const response = await fetch('/api/set-admin', {
         method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ uid: user.uid }),
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to seed data.');
+        const errorText = await response.text();
+        throw new Error(errorText || 'Failed to set admin claim.');
+      }
+      
+      const idTokenResult = await user.getIdTokenResult(true);
+
+      if (idTokenResult.claims.isAdmin) {
+         toast({
+           title: 'Success!',
+           description: "You are now an admin. You can now seed data. Please refresh the page for changes to take effect everywhere.",
+         });
+      } else {
+         throw new Error('Admin claim was not set correctly. Please try again.');
       }
 
-      const data = await response.json();
+    } catch (error) {
+       const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+       toast({
+         variant: 'destructive',
+         title: 'Error Making Admin',
+         description: errorMessage,
+       });
+    } finally {
+      setIsAdminLoading(false);
+    }
+  }
+
+
+  const handleSeedData = async () => {
+    if (!firestore || !user) {
+        toast({ variant: "destructive", title: "Error", description: "Firestore or user not available." });
+        return;
+    }
+    
+    // Check for admin claim on the client
+    const idTokenResult = await user.getIdTokenResult();
+    if (!idTokenResult.claims.isAdmin) {
       toast({
-        title: 'Success!',
-        description: `${data.count} products have been seeded to your database.`,
+        variant: 'destructive',
+        title: 'Permission Denied',
+        description: 'You must be an admin to perform this action. Click the "Make Me Admin" button first.',
       });
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+        const batch = writeBatch(firestore);
+        
+        products.forEach((product) => {
+            const productRef = doc(firestore, "products", product.id);
+            batch.set(productRef, product);
+        });
+
+        await batch.commit();
+
+        toast({
+            title: 'Success!',
+            description: `${products.length} products have been seeded to your database.`,
+        });
 
     } catch (error) {
        const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
@@ -66,17 +130,32 @@ export default function SeedDataPage() {
         <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6 lg:p-8">
           <Card className="w-full max-w-lg mx-auto">
             <CardHeader>
-              <CardTitle>Seed Firestore Data</CardTitle>
+              <CardTitle>Admin Tasks</CardTitle>
               <CardDescription>
-                Populate your Firestore database with the initial set of product data.
+                Perform administrative actions like setting roles and seeding data.
               </CardDescription>
             </CardHeader>
-            <CardContent className="flex flex-col gap-4">
+            <CardContent className="flex flex-col gap-6">
+                <Alert>
+                    <UserCog className="h-4 w-4" />
+                    <AlertTitle>Step 1: Become an Admin</AlertTitle>
+                    <AlertDescription>
+                        For development, click this button to grant your user account admin privileges. You only need to do this once.
+                    </AlertDescription>
+                </Alert>
+                <Button
+                    onClick={handleMakeAdmin}
+                    disabled={isAdminLoading}
+                    variant="secondary"
+                >
+                    {isAdminLoading ? 'Assigning Role...' : 'Make Me Admin'}
+                </Button>
+                
                 <Alert>
                     <Terminal className="h-4 w-4" />
-                    <AlertTitle>For Development Only</AlertTitle>
+                    <AlertTitle>Step 2: Seed Firestore Data</AlertTitle>
                     <AlertDescription>
-                        This action will write {products.length} documents to your Firestore database using a secure, server-side admin process.
+                        This action will write {products.length} documents to your Firestore 'products' collection using your admin privileges.
                     </AlertDescription>
                 </Alert>
               <Button
@@ -86,18 +165,21 @@ export default function SeedDataPage() {
               >
                 {isLoading ? 'Seeding...' : 'Seed Products'}
               </Button>
-              <Button
-                onClick={handleDeleteData}
-                disabled={isLoading || isDeleting}
-                variant="destructive"
-                className="w-full"
-              >
-                {isDeleting ? 'Deleting...' : 'Delete All Products'}
-              </Button>
             </CardContent>
+            <CardFooter>
+                 <Button
+                    onClick={handleDeleteData}
+                    disabled={isLoading || isDeleting}
+                    variant="destructive"
+                    className="w-full"
+                >
+                    {isDeleting ? 'Deleting...' : 'Delete All Products (Not Implemented)'}
+                </Button>
+            </CardFooter>
           </Card>
         </main>
       </AppShell>
     </AuthGuard>
   );
 }
+

@@ -1,10 +1,11 @@
 
 // IMPORTANT: This file should only be imported and used in server-side code.
 
-import { initializeApp, getApps, getApp } from 'firebase-admin/app';
+import { initializeApp, getApps } from 'firebase-admin/app';
+import { getAuth } from 'firebase-admin/auth';
 import { getFirestore } from 'firebase-admin/firestore';
 import { products } from './data'; 
-import { Product } from './types';
+import type { Product } from './types';
 
 // Standard pattern to initialize the Admin SDK in a server environment like Next.js/App Hosting.
 // This ensures the app is only initialized once.
@@ -15,6 +16,17 @@ if (!getApps().length) {
 }
 
 const db = getFirestore();
+const auth = getAuth();
+
+export async function setAdminClaim(uid: string): Promise<void> {
+  try {
+    await auth.setCustomUserClaims(uid, { isAdmin: true });
+    console.log(`Successfully set isAdmin claim for user: ${uid}`);
+  } catch (error) {
+    console.error(`Error setting custom claim for ${uid}:`, error);
+    throw new Error('Failed to set admin claim.');
+  }
+}
 
 export async function seedProductsData() {
   console.log('Starting to seed product data via Admin SDK...');
@@ -46,3 +58,4 @@ export async function seedProductsData() {
   console.log(`✅ Successfully seeded ${products.length} products!`);
   return products.length;
 }
+
