@@ -13,7 +13,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth, useUser } from "@/firebase";
-import { createUserWithEmailAndPassword } from "firebase/auth";
+import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
@@ -25,7 +25,7 @@ import { setDoc, doc } from "firebase/firestore";
 export default function SignupPage() {
   const auth = useAuth();
   const firestore = useFirestore();
-  const { user, isUserLoading } = useUser();
+  const { firebaseUser, isUserLoading } = useUser();
   const router = useRouter();
   const { toast } = useToast();
 
@@ -36,10 +36,10 @@ export default function SignupPage() {
   const [isSigningUp, setIsSigningUp] = useState(false);
 
   useEffect(() => {
-    if (!isUserLoading && user) {
+    if (!isUserLoading && firebaseUser) {
       router.push("/");
     }
-  }, [user, isUserLoading, router]);
+  }, [firebaseUser, isUserLoading, router]);
 
   const handleSignUp = async () => {
     if (!email || !password || !firstName || !lastName) {
@@ -58,6 +58,12 @@ export default function SignupPage() {
         password
       );
       const newUser = userCredential.user;
+
+      // Also update the user's profile in Firebase Auth
+      await updateProfile(newUser, {
+        displayName: `${firstName} ${lastName}`.trim(),
+      });
+
 
       if (newUser && firestore) {
         const userDocRef = doc(firestore, "users", newUser.uid);
@@ -97,7 +103,7 @@ export default function SignupPage() {
     }
   };
 
-  if (isUserLoading || user) {
+  if (isUserLoading || firebaseUser) {
     return (
       <div className="flex h-screen w-full items-center justify-center">
         <p>Loading...</p>

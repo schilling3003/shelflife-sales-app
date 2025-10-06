@@ -26,20 +26,26 @@ export default function SeedDataPage() {
   const [isAdminLoading, setIsAdminLoading] = useState(false);
   const { toast } = useToast();
   const firestore = useFirestore();
-  const { user } = useUser();
+  const { firebaseUser } = useUser();
 
 
   const handleMakeAdmin = async () => {
-    if (!user) {
+    if (!firebaseUser) {
       toast({ variant: "destructive", title: "Not signed in", description: "You must be signed in to become an admin." });
       return;
     }
     setIsAdminLoading(true);
     try {
+      // Force a token refresh to get the latest custom claims.
+      const token = await firebaseUser.getIdToken(true);
+
       const response = await fetch('/api/set-admin', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ uid: user.uid }),
+        headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ uid: firebaseUser.uid }),
       });
 
       if (!response.ok) {
@@ -47,12 +53,13 @@ export default function SeedDataPage() {
         throw new Error(errorText || 'Failed to set admin claim.');
       }
       
-      const idTokenResult = await user.getIdTokenResult(true);
+      // Force a refresh of the user's ID token to get the new claim.
+      const idTokenResult = await firebaseUser.getIdTokenResult(true);
 
       if (idTokenResult.claims.isAdmin) {
          toast({
            title: 'Success!',
-           description: "You are now an admin. You can now seed data. Please refresh the page for changes to take effect everywhere.",
+           description: "You are now an admin. You can now seed data.",
          });
       } else {
          throw new Error('Admin claim was not set correctly. Please try again.');
@@ -72,13 +79,13 @@ export default function SeedDataPage() {
 
 
   const handleSeedData = async () => {
-    if (!firestore || !user) {
+    if (!firestore || !firebaseUser) {
         toast({ variant: "destructive", title: "Error", description: "Firestore or user not available." });
         return;
     }
     
     // Check for admin claim on the client
-    const idTokenResult = await user.getIdTokenResult();
+    const idTokenResult = await firebaseUser.getIdTokenResult();
     if (!idTokenResult.claims.isAdmin) {
       toast({
         variant: 'destructive',
@@ -182,4 +189,3 @@ export default function SeedDataPage() {
     </AuthGuard>
   );
 }
-

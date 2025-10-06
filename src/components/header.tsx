@@ -1,3 +1,4 @@
+
 "use client";
 
 import { Package, UploadCloud, LogOut, User as UserIcon } from "lucide-react";
@@ -16,7 +17,7 @@ import Link from "next/link";
 
 export function Header({children}: {children?: React.ReactNode}) {
   const auth = useAuth();
-  const { user } = useUser();
+  const { firebaseUser } = useUser();
 
   const handleSignOut = () => {
     auth.signOut();
@@ -36,7 +37,7 @@ export function Header({children}: {children?: React.ReactNode}) {
           <UploadCloud className="mr-2 h-4 w-4" />
           Import CSV
         </Button>
-        {user && (
+        {firebaseUser && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
@@ -45,9 +46,9 @@ export function Header({children}: {children?: React.ReactNode}) {
                 className="overflow-hidden rounded-full"
               >
                 <Avatar>
-                  <AvatarImage src={user.photoURL ?? ""} alt="User avatar" />
+                  <AvatarImage src={firebaseUser.photoURL ?? ""} alt="User avatar" />
                   <AvatarFallback>
-                    {user.displayName?.[0] || user.email?.[0] || <UserIcon />}
+                    {firebaseUser.displayName?.[0] || firebaseUser.email?.[0] || <UserIcon />}
                   </AvatarFallback>
                 </Avatar>
               </Button>
@@ -55,7 +56,7 @@ export function Header({children}: {children?: React.ReactNode}) {
             <DropdownMenuContent align="end">
               <DropdownMenuLabel>My Account</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem disabled>{user.email ?? "Anonymous"}</DropdownMenuItem>
+              <DropdownMenuItem disabled>{firebaseUser.email ?? "Anonymous"}</DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={handleSignOut}>
                 <LogOut className="mr-2 h-4 w-4" />

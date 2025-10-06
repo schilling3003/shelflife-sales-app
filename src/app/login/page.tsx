@@ -1,3 +1,4 @@
+
 "use client";
 
 import { Button } from "@/components/ui/button";
@@ -21,7 +22,7 @@ import Link from "next/link";
 
 export default function LoginPage() {
   const auth = useAuth();
-  const { user, isUserLoading } = useUser();
+  const { firebaseUser, isUserLoading } = useUser();
   const router = useRouter();
   const { toast } = useToast();
 
@@ -30,10 +31,10 @@ export default function LoginPage() {
   const [isSigningIn, setIsSigningIn] = useState(false);
 
   useEffect(() => {
-    if (!isUserLoading && user) {
+    if (!isUserLoading && firebaseUser) {
       router.push("/");
     }
-  }, [user, isUserLoading, router]);
+  }, [firebaseUser, isUserLoading, router]);
 
   const handleSignIn = async () => {
     if (!email || !password) {
@@ -74,7 +75,7 @@ export default function LoginPage() {
     }
   };
 
-  if (isUserLoading || user) {
+  if (isUserLoading || firebaseUser) {
     return (
       <div className="flex h-screen w-full items-center justify-center">
         <p>Loading...</p>
