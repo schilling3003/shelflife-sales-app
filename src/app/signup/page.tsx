@@ -20,8 +20,7 @@ import { useToast } from "@/hooks/use-toast";
 import { FirebaseError } from "firebase/app";
 import Link from "next/link";
 import { useFirestore } from "@/firebase";
-import { setDocumentNonBlocking } from "@/firebase/non-blocking-updates";
-import { doc } from "firebase/firestore";
+import { setDoc, doc } from "firebase/firestore";
 
 export default function SignupPage() {
   const auth = useAuth();
@@ -62,18 +61,14 @@ export default function SignupPage() {
 
       if (newUser && firestore) {
         const userDocRef = doc(firestore, "users", newUser.uid);
-        // The setDoc operation needs to be non-blocking to allow the UI to update,
-        // but crucially, it needs to be called.
-        setDocumentNonBlocking(userDocRef, {
-            id: newUser.uid,
-            firstName,
-            lastName,
-            email: newUser.email,
-        }, {}); // Use an empty options object for a direct set
+        // Use await with setDoc to ensure the document is created before redirecting.
+        await setDoc(userDocRef, {
+          id: newUser.uid,
+          firstName,
+          lastName,
+          email: newUser.email,
+        });
       }
-
-      // No need to show a toast here, the useEffect will redirect
-      // and the user will know they are signed in.
       
     } catch (error) {
       let errorMessage = "An unexpected error occurred.";
