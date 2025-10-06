@@ -12,7 +12,12 @@ export async function POST() {
   } catch (error) {
     console.error('API Error Seeding Data:', error);
     const errorMessage = error instanceof Error ? error.message : 'An unknown server error occurred.';
-    // Return a 500 Internal Server Error response
-    return NextResponse.json({ error: errorMessage }, { status: 500 });
+    // Return a plain text error response with a 500 status code.
+    return new NextResponse(errorMessage, {
+      status: 500,
+      headers: {
+        'Content-Type': 'text/plain',
+      },
+    });
   }
 }
