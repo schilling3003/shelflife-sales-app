@@ -1,8 +1,7 @@
-export type ProductStatus = 'healthy' | 'at-risk' | 'expiring-soon';
 
 export type Product = {
   id: string;
-  division: string;
+  division: number;
   itemCode: string;
   brand: string;
   description: string;

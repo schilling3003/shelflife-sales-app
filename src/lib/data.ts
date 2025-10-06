@@ -6,13 +6,13 @@ const today = new Date();
 export const products: Product[] = [
   {
     id: 'prod_1',
-    division: 'Bakery',
+    division: 10,
     itemCode: 'BK-001',
     brand: 'Artisan Bakes',
     description: 'Sourdough Loaf',
     packSize: 12,
     size: '1.5lb',
-    minExpiry: formatISO(addDays(today, 15)), // expiring-soon
+    minExpiry: formatISO(addDays(today, 15)),
     maxExpiry: formatISO(addDays(today, 25)),
     projectedSellOut: formatISO(addDays(today, 10)),
     quantityOnHand: 150,
@@ -20,13 +20,13 @@ export const products: Product[] = [
   },
   {
     id: 'prod_2',
-    division: 'Dairy',
+    division: 20,
     itemCode: 'DY-015',
     brand: 'Farm Fresh',
     description: 'Organic Greek Yogurt',
     packSize: 6,
     size: '5.3oz',
-    minExpiry: formatISO(addDays(today, 45)), // at-risk
+    minExpiry: formatISO(addDays(today, 45)),
     maxExpiry: formatISO(addDays(today, 60)),
     projectedSellOut: formatISO(addDays(today, 40)),
     quantityOnHand: 200,
@@ -34,13 +34,13 @@ export const products: Product[] = [
   },
   {
     id: 'prod_3',
-    division: 'Produce',
+    division: 30,
     itemCode: 'PR-052',
     brand: 'Global Produce',
     description: 'Avocado Hass',
     packSize: 1,
     size: 'ea',
-    minExpiry: formatISO(addDays(today, 5)), // expiring-soon
+    minExpiry: formatISO(addDays(today, 5)),
     maxExpiry: formatISO(addDays(today, 9)),
     projectedSellOut: formatISO(addDays(today, 3)),
     quantityOnHand: 300,
@@ -48,13 +48,13 @@ export const products: Product[] = [
   },
   {
     id: 'prod_4',
-    division: 'Beverages',
+    division: 40,
     itemCode: 'BV-101',
     brand: 'AquaPure',
     description: 'Sparkling Mineral Water',
     packSize: 24,
     size: '12oz',
-    minExpiry: formatISO(addDays(today, 180)), // healthy
+    minExpiry: formatISO(addDays(today, 180)),
     maxExpiry: formatISO(addDays(today, 365)),
     projectedSellOut: formatISO(addDays(today, 150)),
     quantityOnHand: 500,
@@ -62,13 +62,13 @@ export const products: Product[] = [
   },
   {
     id: 'prod_5',
-    division: 'Frozen',
+    division: 50,
     itemCode: 'FZ-033',
     brand: 'Napoli Pizza Co.',
     description: 'Neapolitan Pizza',
     packSize: 1,
     size: '12in',
-    minExpiry: formatISO(addDays(today, 88)), // at-risk
+    minExpiry: formatISO(addDays(today, 88)),
     maxExpiry: formatISO(addDays(today, 120)),
     projectedSellOut: formatISO(addDays(today, 95)),
     quantityOnHand: 120,
@@ -76,13 +76,13 @@ export const products: Product[] = [
   },
   {
     id: 'prod_6',
-    division: 'Snacks',
+    division: 60,
     itemCode: 'SN-089',
     brand: 'Salty Snacks',
     description: 'Sea Salt Potato Chips',
     packSize: 30,
     size: '1oz',
-    minExpiry: formatISO(addDays(today, 92)), // healthy
+    minExpiry: formatISO(addDays(today, 92)),
     maxExpiry: formatISO(addDays(today, 150)),
     projectedSellOut: formatISO(addDays(today, 70)),
     quantityOnHand: 450,
@@ -90,13 +90,13 @@ export const products: Product[] = [
   },
   {
     id: 'prod_7',
-    division: 'Dairy',
+    division: 20,
     itemCode: 'DY-004',
     brand: 'Farm Fresh',
     description: 'Whole Milk Gallon',
     packSize: 1,
     size: '1gal',
-    minExpiry: formatISO(addDays(today, 12)), // expiring-soon
+    minExpiry: formatISO(addDays(today, 12)),
     maxExpiry: formatISO(addDays(today, 18)),
     projectedSellOut: formatISO(addDays(today, 8)),
     quantityOnHand: 80,
@@ -104,15 +104,15 @@ export const products: Product[] = [
   },
     {
     id: 'prod_8',
-    division: 'Meat',
+    division: 70,
     itemCode: 'MT-007',
     brand: 'Prime Cuts',
     description: 'Grass-fed Ribeye Steak',
     packSize: 2,
     size: '8oz',
-    minExpiry: formatISO(addDays(today, 8)), // expiring-soon
+    minExpiry: formatISO(addDays(today, 8)),
     maxExpiry: formatISO(addDays(today, 14)),
-    projectedSellOut: formatISO(subDays(today, 2)), // past sell-out date
+    projectedSellOut: formatISO(subDays(today, 2)),
     quantityOnHand: 40,
     committedQuantity: 5,
   },
