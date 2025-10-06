@@ -1,3 +1,4 @@
+
 "use client";
 
 import { Button } from "@/components/ui/button";
@@ -12,14 +13,14 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth, useUser } from "@/firebase";
-import { signInWithEmailAndPassword } from "firebase/auth";
+import { createUserWithEmailAndPassword } from "firebase/auth";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { FirebaseError } from "firebase/app";
 import Link from "next/link";
 
-export default function LoginPage() {
+export default function SignupPage() {
   const auth = useAuth();
   const { user, isUserLoading } = useUser();
   const router = useRouter();
@@ -27,7 +28,7 @@ export default function LoginPage() {
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [isSigningIn, setIsSigningIn] = useState(false);
+  const [isSigningUp, setIsSigningUp] = useState(false);
 
   useEffect(() => {
     if (!isUserLoading && user) {
@@ -35,18 +36,18 @@ export default function LoginPage() {
     }
   }, [user, isUserLoading, router]);
 
-  const handleSignIn = async () => {
+  const handleSignUp = async () => {
     if (!email || !password) {
         toast({
             variant: "destructive",
-            title: "Login Failed",
+            title: "Sign-up Failed",
             description: "Please enter both email and password.",
         });
         return;
     }
-    setIsSigningIn(true);
+    setIsSigningUp(true);
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+      await createUserWithEmailAndPassword(auth, email, password);
       // Let the useEffect handle the redirect
     } catch (error) {
       let errorMessage = "An unexpected error occurred.";
@@ -55,22 +56,23 @@ export default function LoginPage() {
           case "auth/invalid-email":
             errorMessage = "Please enter a valid email address.";
             break;
-          case "auth/user-not-found":
-          case "auth/wrong-password":
-          case "auth/invalid-credential":
-            errorMessage = "Invalid email or password.";
+          case "auth/email-already-in-use":
+            errorMessage = "This email address is already in use.";
+            break;
+          case "auth/weak-password":
+            errorMessage = "Password should be at least 6 characters long.";
             break;
           default:
-            errorMessage = "Login failed. Please try again.";
+            errorMessage = "Sign-up failed. Please try again.";
             break;
         }
       }
       toast({
         variant: "destructive",
-        title: "Login Failed",
+        title: "Sign-up Failed",
         description: errorMessage,
       });
-      setIsSigningIn(false);
+      setIsSigningUp(false);
     }
   };
 
@@ -86,9 +88,9 @@ export default function LoginPage() {
     <div className="flex h-screen w-full items-center justify-center bg-background">
       <Card className="w-full max-w-sm">
         <CardHeader>
-          <CardTitle className="text-2xl">Login</CardTitle>
+          <CardTitle className="text-2xl">Sign Up</CardTitle>
           <CardDescription>
-            Enter your email below to login to your account.
+            Enter your email and password to create an account.
           </CardDescription>
         </CardHeader>
         <CardContent className="grid gap-4">
@@ -101,7 +103,7 @@ export default function LoginPage() {
               required 
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              disabled={isSigningIn}
+              disabled={isSigningUp}
             />
           </div>
           <div className="grid gap-2">
@@ -112,20 +114,20 @@ export default function LoginPage() {
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              disabled={isSigningIn}
+              disabled={isSigningUp}
             />
           </div>
         </CardContent>
         <CardFooter className="flex flex-col gap-4">
-          <Button className="w-full" onClick={handleSignIn} disabled={isSigningIn}>
-            {isSigningIn ? 'Signing In...' : 'Sign In'}
+          <Button className="w-full" onClick={handleSignUp} disabled={isSigningUp}>
+            {isSigningUp ? 'Signing Up...' : 'Sign Up'}
           </Button>
-           <div className="text-center text-sm">
-              Don't have an account?{" "}
-              <Link href="/signup" className="underline">
-                Sign up
-              </Link>
-            </div>
+          <div className="text-center text-sm">
+            Already have an account?{" "}
+            <Link href="/login" className="underline">
+              Sign in
+            </Link>
+          </div>
         </CardFooter>
       </Card>
     </div>
