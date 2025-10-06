@@ -62,19 +62,19 @@ export default function SignupPage() {
 
       if (newUser && firestore) {
         const userDocRef = doc(firestore, "users", newUser.uid);
+        // The setDoc operation needs to be non-blocking to allow the UI to update,
+        // but crucially, it needs to be called.
         setDocumentNonBlocking(userDocRef, {
             id: newUser.uid,
             firstName,
             lastName,
             email: newUser.email,
-        }, { merge: true });
+        }, {}); // Use an empty options object for a direct set
       }
 
-      toast({
-        title: "Sign-up Successful",
-        description: "You have successfully created an account.",
-      });
-      // Let the useEffect handle the redirect
+      // No need to show a toast here, the useEffect will redirect
+      // and the user will know they are signed in.
+      
     } catch (error) {
       let errorMessage = "An unexpected error occurred.";
       if (error instanceof FirebaseError) {

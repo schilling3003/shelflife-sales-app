@@ -1,85 +1,72 @@
-/**
- * @fileoverview Firestore Security Rules for the ShelfLife Sales application.
- *
- * Core Philosophy:
- * This ruleset enforces a strict user-ownership model for user profiles and sales commitments,
- * while allowing public read access to product information. Authorization Independence is
- * achieved through path-based ownership and data denormalization, minimizing the need for
- * complex queries within the security rules.
- *
- * Data Structure:
- * - /users/{userId}: Stores user profiles. Only the user can read/write their profile.
- * - /products/{productId}: Stores product information. This collection is globally readable.
- * - /users/{userId}/salesCommitments/{salesCommitmentId}: Stores sales commitments made by a specific user.
- *   Path-based ownership ensures only the user can read/write their own commitments.
- *
- * Key Security Decisions:
- * - Users can only read and write their own user profiles.
- * - Product information is publicly readable but not writable through the client.
- * - Sales commitments are owned by the user and stored as a subcollection under their profile.
- * - Listing the entire /users collection is denied to prevent information disclosure.
- *
- * Denormalization for Authorization:
- * - The 'userId' field in the /users/{userId}/salesCommitments/{salesCommitmentId} path
- *   is implicitly denormalized, as the path itself enforces ownership.
- *
- * Structural Segregation:
- * - Public product data is stored in a separate top-level collection (/products) to avoid
- *   mixing public and private data within the same collection.
- */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Ensures the user is signed in.
-     * @returns {boolean} True if the user is signed in, false otherwise.
+     * @description Defines the isSignedIn function
      */
     function isSignedIn() {
       return request.auth != null;
     }
 
     /**
-     * @description Checks if the request is made by the owner of the resource.
-     * @param {string} userId - The user ID to check against.
-     * @returns {boolean} True if the request is made by the owner, false otherwise.
+     * @description Defines the isOwner function
      */
     function isOwner(userId) {
       return isSignedIn() && request.auth.uid == userId;
     }
 
     /**
-     * @description Checks if the request is made by the existing owner of the resource and the resource exists.
-     * @param {string} userId - The user ID to check against.
-     * @returns {boolean} True if the request is made by the existing owner, false otherwise.
+     * @description Defines the isExistingOwner function.
+     *              Combines the ownership check with existence check.
      */
     function isExistingOwner(userId) {
-      return isOwner(userId) && resource != null;
+      return isOwner(userId) && exists(resource);
     }
     
     /**
-     * @description Rule for the /users collection.
+     * @description Rules for the /users/{userId} collection.
      * @path /users/{userId}
-     * @allow (create) - Allow user with uid 'user123' to create their own profile at /users/user123 if the id field also equals 'user123'.
-     * @allow (get, update, delete) - Allow user with uid 'user123' to get, update and delete their own profile at /users/user123.
-     * @deny (get) - Deny user to get the user profile at /users/anotherUser.
-     * @deny (create) - Deny user with uid 'user123' to create a profile at /users/anotherUser.
-     * @principle Enforces document ownership for writes.
+     * @allow (create) User with ID 'user123' creates their own profile.
+     *        request.auth.uid == 'user123'
+     * @allow (get) User with ID 'user123' reads their own profile.
+     *        request.auth.uid == 'user123'
+     * @allow (update) User with ID 'user123' updates their own profile.
+     *        request.auth.uid == 'user123'
+     * @allow (delete) User with ID 'user123' deletes their own profile.
+     *        request.auth.uid == 'user123'
+     * @deny (create) User with ID 'user456' tries to create a profile for 'user123'.
+     *       request.auth.uid == 'user456'
+     * @deny (get) User with ID 'user456' tries to read the profile of 'user123'.
+     *       request.auth.uid == 'user456'
+     * @deny (update) User with ID 'user456' tries to update the profile of 'user123'.
+     *       request.auth.uid == 'user456'
+     * @deny (delete) User with ID 'user456' tries to delete the profile of 'user123'.
+     *       request.auth.uid == 'user456'
+     * @principle Enforces document ownership for writes and reads.
      */
     match /users/{userId} {
       allow get: if isOwner(userId);
-      allow list: if false;
-      allow create: if isOwner(userId) && request.resource.data.id == userId;
-      allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id;
+      allow list: if false; // Listing all users is not permitted.
+      allow create: if isOwner(userId);
+      allow update: if isExistingOwner(userId);
       allow delete: if isExistingOwner(userId);
     }
 
     /**
-     * @description Rule for the /products collection.
+     * @description Rules for the /products/{productId} collection.
      * @path /products/{productId}
-     * @allow (get, list) - Allow all users to read product information.
-     * @deny (create, update, delete) - Prevent client-side writes to product data.
-     * @principle Allows public read access to product information.
+     * @allow (get) Any user can read product 'product123'.
+     *        request.auth.uid != null
+     * @allow (list) Any user can list products.
+     *        request.auth.uid != null
+     * @deny (create) Any user tries to create a new product.
+     *       request.auth.uid != null
+     * @deny (update) Any user tries to update product 'product123'.
+     *        request.auth.uid != null
+     * @deny (delete) Any user tries to delete product 'product123'.
+     *       request.auth.uid != null
+     * @principle Allows public read access but restricts write access.
      */
     match /products/{productId} {
       allow get, list: if true;
@@ -87,19 +74,30 @@ service cloud.firestore {
     }
 
     /**
-     * @description Rule for the /users/{userId}/salesCommitments collection.
+     * @description Rules for the /users/{userId}/salesCommitments/{salesCommitmentId} collection.
      * @path /users/{userId}/salesCommitments/{salesCommitmentId}
-     * @allow (create) - Allow user with uid 'user123' to create sales commitment under their profile at /users/user123/salesCommitments/commitment1.
-     * @allow (get, update, delete) - Allow user with uid 'user123' to get, update, and delete their own sales commitment at /users/user123/salesCommitments/commitment1.
-     * @deny (get) - Deny user to get a sales commitment at /users/anotherUser/salesCommitments/commitment1.
-     * @deny (create) - Deny user to create a sales commitment under another user's profile at /users/anotherUser/salesCommitments/commitment1.
-     * @principle Enforces path-based ownership for sales commitments.
+     * @allow (create) User with ID 'user123' creates a sales commitment.
+     *        request.auth.uid == 'user123'
+     * @allow (get) User with ID 'user123' reads their sales commitment.
+     *        request.auth.uid == 'user123'
+     * @allow (update) User with ID 'user123' updates their sales commitment.
+     *        request.auth.uid == 'user123'
+     * @allow (delete) User with ID 'user123' deletes their sales commitment.
+     *        request.auth.uid == 'user123'
+     * @deny (create) User with ID 'user456' tries to create a sales commitment for 'user123'.
+     *       request.auth.uid == 'user456'
+     * @deny (get) User with ID 'user456' tries to read the sales commitment of 'user123'.
+     *       request.auth.uid == 'user456'
+     * @deny (update) User with ID 'user456' tries to update the sales commitment of 'user123'.
+     *       request.auth.uid == 'user456'
+     * @deny (delete) User with ID 'user456' tries to delete the sales commitment of 'user123'.
+     *       request.auth.uid == 'user456'
+     * @principle Enforces document ownership for writes and reads.
      */
     match /users/{userId}/salesCommitments/{salesCommitmentId} {
-      allow get: if isOwner(userId);
-      allow list: if isOwner(userId);
-      allow create: if isOwner(userId) && request.resource.data.userId == userId;
-      allow update: if isExistingOwner(userId) && request.resource.data.userId == userId;
+      allow get, list: if isOwner(userId);
+      allow create: if isOwner(userId);
+      allow update: if isExistingOwner(userId);
       allow delete: if isExistingOwner(userId);
     }
   }
